@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>QAMAL: Prison Break</title>
+
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+
+<body>
+
+    <main id="app">
+
+        <!-- Главное меню -->
+        <section id="main-menu" class="screen">
+
+            <div class="menu-content">
+
+                <h1 class="game-title">QAMAL</h1>
+
+                <h2 class="game-subtitle">PRISON BREAK</h2>
+
+                <p class="game-description">
+                    Every line of code is a step towards freedom.
+                </p>
+
+                <div class="menu-buttons">
+
+                    <button id="play-btn" class="game-btn">
+                        НАЧАТЬ ИГРУ
+                    </button>
+
+                    <button id="settings-btn" class="game-btn">
+                        НАСТРОЙКИ
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Настройки -->
+        <section id="settings-screen" class="screen" hidden>
+
+            <h2>НАСТРОЙКИ</h2>
+
+            <label for="language-select">
+                Язык программирования:
+            </label>
+
+            <select id="language-select">
+                <option value="python">Python</option>
+                <option value="go">Golang</option>
+            </select>
+
+            <button id="back-btn" class="game-btn">
+                НАЗАД
+            </button>
+
+        </section>
+
+        <!-- Игровой экран -->
+        <section id="game-screen" class="screen" hidden>
+
+            <canvas id="game-canvas"></canvas>
+
+            <button id="exit-btn" class="game-btn">
+                ВЫЙТИ В МЕНЮ
+            </button>
+
+        </section>
+
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+
+</body>
+</html>
