@@ -1,0 +1,291 @@
+
+/* QAMAL: PRISON BREAK */
+/* Основные цвета */
+
+:root {
+    --background: #0b1018;
+    --panel: #182330;
+    --panel-light: #263748;
+    --text: #e0e6eb;
+    --muted: #8796a5;
+    --accent: #e3b65f;
+    --danger: #aa3535;
+    --border: #45586a;
+}
+
+/* Общие настройки */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    background-color: var(--background);
+    color: var(--text);
+
+    font-family: "Courier New", monospace;
+}
+
+/* Скрытые экраны */
+
+[hidden] {
+    display: none !important;
+}
+
+/* Все игровые экраны */
+
+.screen {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    min-height: 100vh;
+    min-height: 100svh;
+
+    padding: 24px;
+    overflow: hidden;
+}
+
+/* Главное меню */
+
+#main-menu {
+    background:
+        linear-gradient(
+            rgba(8, 13, 20, 0.8),
+            rgba(8, 13, 20, 0.95)
+        ),
+        repeating-linear-gradient(
+            90deg,
+            #243446 0px,
+            #243446 32px,
+            #1a2735 32px,
+            #1a2735 35px
+        );
+}
+
+/* Декоративная пиксельная сетка */
+
+#main-menu::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px
+        );
+
+    background-size: 32px 32px;
+
+    pointer-events: none;
+}
+
+/* Центральная панель */
+
+.menu-content {
+    position: relative;
+    z-index: 1;
+
+    width: min(100%, 620px);
+
+    padding: 50px 35px;
+
+    text-align: center;
+
+    background: rgba(13, 22, 32, 0.94);
+
+    border: 4px solid var(--border);
+
+    box-shadow:
+        8px 8px 0 #05080e,
+        inset 0 0 0 3px #0b131d;
+}
+
+/* Название игры */
+
+.game-title {
+    margin: 0;
+
+    font-size: clamp(52px, 10vw, 100px);
+    font-weight: 900;
+
+    letter-spacing: 8px;
+
+    color: var(--accent);
+
+    text-shadow:
+        4px 4px 0 #65491f,
+        8px 8px 0 #090e15;
+}
+
+.game-subtitle {
+    margin-top: 5px;
+
+    font-size: clamp(17px, 4vw, 30px);
+    letter-spacing: 5px;
+
+    color: var(--text);
+}
+
+/* Описание */
+
+.game-description {
+    margin: 30px 0 45px;
+
+    color: var(--muted);
+
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+/* Кнопки */
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.game-btn {
+    padding: 16px 22px;
+
+    background-color: var(--panel-light);
+
+    color: var(--text);
+
+    border: 3px solid var(--border);
+    border-radius: 0;
+
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    cursor: pointer;
+
+    box-shadow: 5px 5px 0 #05080e;
+
+    transition:
+        background-color 0.15s,
+        transform 0.15s;
+}
+
+.game-btn:hover {
+    background-color: var(--accent);
+
+    color: #111820;
+
+    transform: translate(-2px, -2px);
+}
+
+.game-btn:active {
+    transform: translate(3px, 3px);
+
+    box-shadow: 2px 2px 0 #05080e;
+}
+
+.game-btn:focus-visible,
+select:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+}
+
+/* Настройки */
+
+#settings-screen {
+    gap: 20px;
+
+    background-color: var(--background);
+}
+
+#settings-screen h2 {
+    color: var(--accent);
+    letter-spacing: 4px;
+}
+
+#settings-screen label {
+    color: var(--text);
+    font-size: 16px;
+}
+
+#language-select {
+    width: min(100%, 300px);
+
+    padding: 14px;
+
+    color: var(--text);
+    background: var(--panel);
+
+    border: 3px solid var(--border);
+    border-radius: 0;
+
+    font-family: inherit;
+    font-size: 16px;
+}
+
+/* Игровой экран */
+
+#game-screen {
+    gap: 20px;
+
+    background-color: #090e15;
+}
+
+#game-canvas {
+    display: block;
+
+    max-width: 100%;
+
+    background-color: #182330;
+
+    border: 4px solid var(--border);
+
+    image-rendering: pixelated;
+}
+
+/* Адаптация для телефона */
+
+@media (max-width: 600px) {
+
+    .menu-content {
+        padding: 35px 20px;
+    }
+
+    .game-title {
+        letter-spacing: 3px;
+    }
+
+    .game-subtitle {
+        letter-spacing: 2px;
+    }
+
+    .game-btn {
+        font-size: 13px;
+    }
+}
+
+/* Уменьшение анимаций при необходимости */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .game-btn {
+        transition: none;
+    }
+}
