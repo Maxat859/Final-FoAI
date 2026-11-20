@@ -1,0 +1,618 @@
+{
+  "version": "1.0",
+  "description": "6 сюжетных и 24 второстепенных персонажа QAMAL: PRISON BREAK (Участник №2)",
+  "defaultPortraitFallback": "portrait.default",
+  "main": [
+    {
+      "id": "Q-01047",
+      "displayName": "Ерасыл",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.erasyl",
+      "spriteId": "character.player.erasyl",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4001",
+        "EVT-4002"
+      ],
+      "riskAssessment": {
+        "label": "HIGH",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-14:20",
+      "storyFlags": {
+        "hasSeenOwnFile": false,
+        "isPlayer": true
+      }
+    },
+    {
+      "id": "Q-01002",
+      "displayName": "Арман",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.arman",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4003"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-10:15",
+      "storyFlags": {
+        "talkedToPlayer": false,
+        "roleHint": "mentor"
+      }
+    },
+    {
+      "id": "Q-01003",
+      "displayName": "Руслан",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.ruslan",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4004",
+        "EVT-4005"
+      ],
+      "riskAssessment": {
+        "label": "MEDIUM",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-11:40",
+      "storyFlags": {
+        "talkedToPlayer": false,
+        "roleHint": "informant"
+      }
+    },
+    {
+      "id": "Q-01004",
+      "displayName": "Данияр",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.daniyar",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4006"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-09:30",
+      "storyFlags": {
+        "talkedToPlayer": false,
+        "roleHint": "technician"
+      }
+    },
+    {
+      "id": "Q-01005",
+      "displayName": "Тимур",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.timur",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "under_review",
+      "observations": [
+        "EVT-4007",
+        "EVT-4008"
+      ],
+      "riskAssessment": {
+        "label": "HIGH",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-13:05",
+      "storyFlags": {
+        "talkedToPlayer": false,
+        "roleHint": "archive_witness"
+      }
+    },
+    {
+      "id": "Q-01006",
+      "displayName": "Мадина",
+      "roleTier": "main",
+      "portraitAssetId": "portrait.madina",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4009"
+      ],
+      "riskAssessment": {
+        "label": "MEDIUM",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-12:50",
+      "storyFlags": {
+        "talkedToPlayer": false,
+        "roleHint": "system_analyst"
+      }
+    }
+  ],
+  "secondary": [
+    {
+      "id": "Q-01007",
+      "displayName": "Нурлан",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4011"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-11:07",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01008",
+      "displayName": "Асхат",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4012"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-12:14",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01009",
+      "displayName": "Бауыржан",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4013"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-13:21",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01010",
+      "displayName": "Саят",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4014"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-14:28",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01011",
+      "displayName": "Алишер",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4015"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-15:35",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01012",
+      "displayName": "Бекзат",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4016"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-16:42",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01013",
+      "displayName": "Кайрат",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4017"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-17:49",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01014",
+      "displayName": "Ержан",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4018"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-18:56",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01015",
+      "displayName": "Олжас",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4019"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-19:03",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01016",
+      "displayName": "Серик",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4020"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-10:10",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01017",
+      "displayName": "Мирас",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4021"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-11:17",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01018",
+      "displayName": "Айдос",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4022"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-12:24",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01019",
+      "displayName": "Жандос",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4023"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-13:31",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01020",
+      "displayName": "Куаныш",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4024"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-14:38",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01021",
+      "displayName": "Марат",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4025"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-15:45",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01022",
+      "displayName": "Диас",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4026"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-16:52",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01023",
+      "displayName": "Азамат",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4027"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-17:59",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01024",
+      "displayName": "Санжар",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4028"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-18:06",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01025",
+      "displayName": "Ильяс",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4029"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-19:13",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01026",
+      "displayName": "Рамазан",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4030"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-10:20",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01027",
+      "displayName": "Айгуль",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_2",
+      "spriteId": "character.prisoner.default",
+      "blockId": "B",
+      "status": "active",
+      "observations": [
+        "EVT-4031"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-11:27",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01028",
+      "displayName": "Алия",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_3",
+      "spriteId": "character.prisoner.default",
+      "blockId": "C",
+      "status": "active",
+      "observations": [
+        "EVT-4032"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-2-12:34",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01029",
+      "displayName": "Динара",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_4",
+      "spriteId": "character.prisoner.default",
+      "blockId": "D",
+      "status": "active",
+      "observations": [
+        "EVT-4033"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-3-13:41",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    },
+    {
+      "id": "Q-01030",
+      "displayName": "Сауле",
+      "roleTier": "secondary",
+      "portraitAssetId": "portrait.npc_1",
+      "spriteId": "character.prisoner.default",
+      "blockId": "A",
+      "status": "active",
+      "observations": [
+        "EVT-4034"
+      ],
+      "riskAssessment": {
+        "label": "LOW",
+        "modelVersion": "pending-tree"
+      },
+      "lastUpdatedAt": "game-day-1-14:48",
+      "storyFlags": {
+        "hasShortDialogue": true
+      }
+    }
+  ]
+}
