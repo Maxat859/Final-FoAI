@@ -5,7 +5,7 @@ export const COLS=48;
 export const VIEW_ROWS=15;
 export const VIEW_COLS=23;
 export const FLOORS=[1,2];
-export const EXIT_POSITION=Object.freeze({row:29,col:45,floor:1});
+export const EXIT_POSITION=Object.freeze({row:29,col:45});
 export const STAIR_LINKS=Object.freeze([
   {id:'north',row:10,col:10,from:1,to:2},
   {id:'service',row:26,col:34,from:1,to:2}
