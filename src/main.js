@@ -13,6 +13,7 @@ import {createDossierUI} from './ui/dossierUI.js';
 import {createTrainingLabUI} from './ui/trainingLabUI.js';
 import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities} from './game/liveWorld.js';
 import {changeAlarm} from './game/alarm.js';
+import {adjacentDoor,findDoor,doorId,DIFFICULTY_LABEL} from './game/doorChallenges.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
@@ -22,7 +23,7 @@ const renderer=createRenderer(canvas,mini,assets);
 const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
 const storage=createStorage();
 let player={...START_POSITION},seen=new Set(),visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
-let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
+let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false,unlockedDoors=new Set();
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
 function updateVision(){
@@ -30,7 +31,7 @@ function updateVision(){
   for(const tile of visible)seen.add(tile);
 }
 function render(){
-  renderer.frame({world,player,entities,seen,visible,route,alarm,mission});
+  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors]});
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
@@ -41,12 +42,27 @@ function render(){
   const logEl=$('live-events');if(logEl)logEl.textContent=live.events.slice(-2).map(e=>`${e.source}: ${e.description}`).join(' · ') || 'СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ';
   $('objective').textContent=objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
+  const hint=$('action-prompt');
+  if(hint){
+    const door=adjacentDoor(world,player,unlockedDoors);
+    const target=nearestInteraction(player,world,entities);
+    hint.textContent=door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
+      target?.kind==='npc'?'E — ПОГОВОРИТЬ С '+target.name.toUpperCase():
+      target?'E — '+target.name.toUpperCase():
+      'WASD — ХОДИТЬ · E — ВЗАИМОДЕЙСТВИЕ · M — КАРТА';
+  }
 }
-async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen});}
+async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen,unlockedDoors:[...unlockedDoors]});}
 function mark(key){
   mission=markMission(mission,key);
-  if(key==='lockOpen'){world[11][14]='D';updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
+  if(key==='lockOpen'){world[11][14]='D';unlockedDoors.add(doorId(11,14));updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
   else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
+  render();void persist();
+}
+function unlockDoor(door){
+  unlockedDoors.add(door.id);
+  if(!mission.learned)mark('learned');
+  message('ДВЕРЬ '+door.id+' ОТКРЫТА! Вернись на карту и пройди дальше.');
   render();void persist();
 }
 function syncGuards(){for(const guard of guardEntities(live)){const entity=entities.find(e=>e.id===guard.id);if(entity)Object.assign(entity,guard);}}
@@ -63,18 +79,23 @@ function raiseAlarm(value){
 }
 function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
+  const door=adjacentDoor(world,player,unlockedDoors);
+  if(door){void panels.open('door',door);return;}
   const target=nearestInteraction(player,world,entities);
-  if(!target){message('Рядом нет объекта. Исследуй карту или используй меню справа.');return;}
-  if(target.kind==='npc'){
-    if(target.id==='arman')message('АРМАН: «Ерасыл, у каждой двери своё правило. Начни с программирования. Потом изучи карту — и найди доказательства в архиве».');
-    else if(target.id==='ruslan')message('РУСЛАН: «Я видел несоответствия в досье. Камеры могут показать больше, чем ты думаешь».');
-    else message(target.name+': «Здесь за каждым шагом наблюдают виртуальные датчики. Будь внимателен».');
-    return;
-  }
+  if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
+  if(target.kind==='npc'){void panels.open('npc',target);return;}
   const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
-  panels.open(mapping[target.kind]);
+  if(mapping[target.kind])void panels.open(mapping[target.kind]);
+  else message('Нажми E возле отмеченного объекта.');
 }
-function move(direction){const outcome=attemptMove(player,direction,world,entities);
+function move(direction){
+  const targetRow=player.row+direction[0],targetCol=player.col+direction[1];
+  const door=findDoor(world,targetRow,targetCol);
+  if(door&&!unlockedDoors.has(door.id)){
+    message('Закрытая дверь: '+DIFFICULTY_LABEL[door.difficulty]+'. Реши задание, чтобы пройти.');
+    void panels.open('door',door);return;
+  }
+  const outcome=attemptMove(player,direction,world,entities);
   if(!outcome.moved){message(outcome.reason);return;}
   player=outcome.player;
   updateVision();
@@ -102,11 +123,12 @@ async function init(){
     if(previous.mapVersion===2 && Array.isArray(previous.seen))
       seen=new Set(previous.seen.filter(x=>typeof x==='string'&&/^\d+,\d+$/.test(x)));
     mission={...DEFAULT_MISSION,...previous.mission};
+    if(Array.isArray(previous.unlockedDoors))unlockedDoors=new Set(previous.unlockedDoors.filter(x=>/^\d+:\d+$/.test(x)));
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
     live=restoreLiveWorld(previous.live);
     live={...live,alarm:changeAlarm(live.alarm,alarm-live.alarm.value)};
     introSeen=Boolean(previous.introSeen);
-    if(mission.lockOpen)world[11][14]='D';
+    if(mission.lockOpen){world[11][14]='D';unlockedDoors.add(doorId(11,14));}
   }
   updateVision();
   syncGuards();
@@ -121,8 +143,14 @@ async function init(){
   const labUI=createTrainingLabUI(inner);await labUI.load();
   panels=createPanels($('game-dialog'),{
     dossiers:dossierUI,lab:labUI,
-    language:()=>$('language-select').value,mark,raiseAlarm,
-    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world,
+    language:()=>$('language-select').value,mark,raiseAlarm,unlockDoor,
+    portraitFor:(person)=>{
+      const named=new Set(['erasyl','arman','ruslan','guard','daniyar','madina','timur']);
+      if(named.has(person))return './assets/portraits/'+person+'.svg';
+      const key='portrait.'+person;
+      return './'+(assets.manifest?.sprites?.[key]||'assets/characters/prisoners/prisoner.png');
+    },
+    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>tile==='D'&&!unlockedDoors.has(doorId(r,c))?'#':tile)),
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
       'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18}
@@ -138,15 +166,16 @@ async function init(){
           context.fillRect(c*cellW,r*cellH,cellW+1,cellH+1);
         }
       }
-      const camera=getCameraOffset(player,world);
+      const viewport=renderer.getViewport();
+      const camera=getCameraOffset(player,world,viewport.rows,viewport.cols);
       context.strokeStyle='#d8ad59';context.lineWidth=1;
-      context.strokeRect(camera.col*cellW+.5,camera.row*cellH+.5,VIEW_COLS*cellW,VIEW_ROWS*cellH);
+      context.strokeRect(camera.col*cellW+.5,camera.row*cellH+.5,viewport.cols*cellW,viewport.rows*cellH);
       context.fillStyle='#f2c76e';context.fillRect(player.col*cellW-2,player.row*cellH-2,6,6);
     },
     setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
   });
   $('play-btn').addEventListener('click',()=>{
-    show($('game-screen'));render();
+    show($('game-screen'));$('tools-popup').hidden=true;renderer.resize();render();
     message('Глава 1: QAMAL-01. Исследуй помещения, поговори с Арманом, пройди контрольные точки.');
     if(!introSeen){introSeen=true;void panels.open('intro');void persist();}
   });
@@ -156,19 +185,41 @@ async function init(){
   $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
   const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
   $('panel-actions').addEventListener('click',event=>{
-    const button=event.target.closest('[data-panel]');if(button)void panels.open(button.dataset.panel);
+    const button=event.target.closest('[data-panel]');
+    if(button){$('tools-popup').hidden=true;void panels.open(button.dataset.panel);}
   });
+  $('tools-toggle').addEventListener('click',()=>{$('tools-popup').hidden=!$('tools-popup').hidden;});
+  $('tools-close').addEventListener('click',()=>{$('tools-popup').hidden=true;});
+  $('action-btn').addEventListener('click',()=>{if(!panels.isOpen())interact();});
+  $('map-btn').addEventListener('click',()=>{if(!panels.isOpen())void panels.open('map');});
+  $('help-btn').addEventListener('click',()=>{if(!panels.isOpen())void panels.open('help');});
+  $('fullscreen-btn').addEventListener('click',()=>{
+    if(document.fullscreenElement)void document.exitFullscreen?.();
+    else void document.documentElement.requestFullscreen?.().catch(()=>{});
+  });
+  document.querySelectorAll('[data-move]').forEach(button=>button.addEventListener('click',()=>{
+    if($('game-screen').hidden||panels.isOpen())return;
+    const direction=DIRECTIONS[button.dataset.move];if(direction)move(direction);
+  }));
+  window.addEventListener('resize',()=>{renderer.resize();render();});
   document.addEventListener('keydown',event=>{
     if($('game-screen').hidden)return;
-    if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else{show($('main-menu'));}return;}
-    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea,button'))return;
-    if(panels.isOpen())return;
+    if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else if(!$('tools-popup').hidden){$('tools-popup').hidden=true;}else{show($('main-menu'));}return;}
+    if(panels.isOpen()){
+      if(event.code==='KeyE'||event.code==='Enter'){
+        if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
+        if(panels.advanceNpc?.())event.preventDefault();
+      }
+      return;
+    }
+    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
+    if(!$('tools-popup').hidden)return;
     if(event.code==='KeyE'){event.preventDefault();interact();return;}
     if(event.code==='KeyM'){event.preventDefault();void panels.open('map');return;}
     const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
   });
   render();
-  message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size};
+  message('Подходи к дверям со звёздами: 1 — лёгкая, 2 — средняя, 3 — сложная. E — открыть задание.');
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors]};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});

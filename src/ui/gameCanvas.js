@@ -1,5 +1,6 @@
 import {ASSET_IDS,COLS,ROOM_LABELS,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS} from '../config.js';
 import {getCameraOffset} from '../game/camera.js';
+import {doorDifficulty,doorId} from '../game/doorChallenges.js';
 
 const TILE=TILE_SIZE;
 const ICONS={'#':ASSET_IDS.wall,D:ASSET_IDS.door,B:ASSET_IDS.bars,b:ASSET_IDS.bed,d:ASSET_IDS.desk,t:ASSET_IDS.terminal,c:ASSET_IDS.camera,E:ASSET_IDS.exit};
@@ -30,9 +31,18 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
   const ctx=canvas.getContext('2d'),miniCtx=mini.getContext('2d');
   if(!ctx||!miniCtx)throw new Error('Canvas 2D is unavailable');
   // Render only a camera window, never the entire 48 x 32 map.
-  canvas.width=VIEW_COLS*TILE;
-  canvas.height=VIEW_ROWS*TILE;
-  ctx.imageSmoothingEnabled=false;miniCtx.imageSmoothingEnabled=false;
+  let viewportCols=VIEW_COLS,viewportRows=VIEW_ROWS;
+  function resize(){
+    const screenWidth=typeof window==='undefined'?736:Math.max(300,window.innerWidth);
+    const screenHeight=typeof window==='undefined'?480:Math.max(320,window.innerHeight);
+    const tileOnScreen=Math.max(43,Math.min(84,Math.round(Math.min(screenWidth/14,screenHeight/9))));
+    viewportCols=Math.min(COLS,Math.max(7,Math.ceil(screenWidth/tileOnScreen)));
+    viewportRows=Math.min(ROWS,Math.max(6,Math.ceil(screenHeight/tileOnScreen)));
+    canvas.width=viewportCols*TILE;
+    canvas.height=viewportRows*TILE;
+    ctx.imageSmoothingEnabled=false;miniCtx.imageSmoothingEnabled=false;
+  }
+  resize();
 
   function sprite(id,x,y,size=TILE,context=ctx){
     const img=assets.images?.get(id);
@@ -57,13 +67,14 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
     }
   }
-  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={}}){
-    const camera=getCameraOffset(player,world);
+  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},unlockedDoors=[]}){
+    const camera=getCameraOffset(player,world,viewportRows,viewportCols);
+    const unlocked=new Set(unlockedDoors);
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle='#050a12';ctx.fillRect(0,0,canvas.width,canvas.height);
 
     // Three fog-of-war states: unknown = black, explored = dark, visible = lit.
-    for(let vr=0;vr<VIEW_ROWS;vr++)for(let vc=0;vc<VIEW_COLS;vc++){
+    for(let vr=0;vr<viewportRows;vr++)for(let vc=0;vc<viewportCols;vc++){
       const r=camera.row+vr,c=camera.col+vc;
       if(r>=world.length||c>=world[r].length)continue;
       const key=r+','+c,x=vc*TILE,y=vr*TILE;
@@ -75,6 +86,18 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       }
     }
 
+    // Programming challenges are visible on door tiles as large, colored markers.
+    for(let vr=0;vr<viewportRows;vr++)for(let vc=0;vc<viewportCols;vc++){
+      const r=camera.row+vr,c=camera.col+vc;
+      if(world[r]?.[c]!=='D'||!visible.has(r+','+c))continue;
+      const id=doorId(r,c),done=unlocked.has(id),level=doorDifficulty(r,c);
+      const x=vc*TILE,y=vr*TILE;
+      ctx.fillStyle=done?'#386d60':level==='easy'?'#5e875a':level==='medium'?'#b98d40':'#a44a57';
+      ctx.fillRect(x+3,y+2,TILE-6,14);
+      ctx.strokeStyle=done?'#a5e3c3':'#ffe7b3';ctx.lineWidth=1;ctx.strokeRect(x+3.5,y+2.5,TILE-7,13);
+      ctx.fillStyle='#fffbe5';ctx.font='bold 9px monospace';
+      ctx.fillText(done?'OK':level==='easy'?'1*':level==='medium'?'2*':'3*',x+9,y+13);
+    }
     // Objective indicators only appear once the object is actually in sight.
     for(const target of TARGETS){
       const key=target.row+','+target.col;
@@ -142,7 +165,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     }
     miniCtx.strokeStyle='rgba(222,181,96,.9)';
     miniCtx.lineWidth=1;
-    miniCtx.strokeRect(camera.col*dx+.5,camera.row*dy+.5,VIEW_COLS*dx,VIEW_ROWS*dy);
+    miniCtx.strokeRect(camera.col*dx+.5,camera.row*dy+.5,viewportCols*dx,viewportRows*dy);
     miniCtx.fillStyle='#f4c66e';
     miniCtx.fillRect(player.col*dx-2,player.row*dy-2,5,5);
   }
@@ -172,5 +195,5 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     view.fillStyle='rgba(113,217,178,.65)';
     view.font='10px monospace';view.fillText('● REC  CAM / SIMULATION',8,16);
   }
-  return {frame,cameraPreview};
+  return {frame,cameraPreview,resize,getViewport:()=>({rows:viewportRows,cols:viewportCols})};
 }

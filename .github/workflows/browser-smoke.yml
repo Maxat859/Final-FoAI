@@ -1,0 +1,41 @@
+name: QAMAL Fullscreen Browser Walkthrough
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "main.css"
+      - "src/**"
+      - "data/**"
+      - "assets/**"
+      - "scripts/browser-smoke.mjs"
+      - ".github/workflows/browser-smoke.yml"
+  push:
+    branches: [main]
+jobs:
+  browser:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser runner
+        run: |
+          npm install --no-save playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Verify game in Chromium
+        run: |
+          npm start >/tmp/qamal-server.log 2>&1 &
+          sleep 4
+          node scripts/browser-smoke.mjs
+      - name: Upload screenshot if available
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qamal-chromium-screenshot
+          path: /tmp/qamal-*.png
+          if-no-files-found: ignore
