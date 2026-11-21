@@ -1,5 +1,7 @@
 import {bayesianUpdate,formatProbability} from '../algorithms/bayes.js';
 import {createEncounter,chooseEncounterAction,applyEncounterMove,ENCOUNTER_ACTIONS} from '../game/tacticalEncounter.js';
+import {checkAnswer} from '../education/questionChecker.js';
+import {DOOR_DIFFICULTIES} from '../game/doorQuests.js';
 const codeBank={
   python:[{q:'Что выводит print(len("QAMAL"))?',options:['4','5','6','Ошибка'],correct:1,why:'len() возвращает количество символов — 5.'},{q:'Что делает range(3)?',options:['0, 1, 2','1, 2, 3','0, 1, 2, 3','Ошибка'],correct:0,why:'Верхняя граница range не включается.'}],
   go:[{q:'Что напечатает fmt.Println(2 + 3)?',options:['23','5','Ошибка','0'],correct:1,why:'Складываются два целых числа.'},{q:'Чему равна длина []int{1,2,3}?',options:['2','3','4','0'],correct:1,why:'len() возвращает 3 элемента.'}]
@@ -10,9 +12,13 @@ export function createPanels(dialog,handlers){
   let active=null;
   let codeIndex=0, currentQuestion=null;
   let encounter=null,encounterSummary='';
+  let questionBank=null,activeDoor=null,doorLanguage='python',doorAnswered=false,doorQuestion=null;
+  let codeDifficulty='easy';
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
   function close(){dialog.hidden=true;active=null;}
-  async function open(name){active=name;dialog.hidden=false;inner.scrollTop=0;
+  async function open(name,payload={}){active=name;dialog.hidden=false;inner.scrollTop=0;
+    if(name==='door'){activeDoor=payload.door;doorLanguage=handlers.language();await drawDoor();}
+    if(name==='npc'){drawNpc(payload.npc);}
     if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники двигаются после твоих ходов. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
     if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Быстрые кнопки справа открывают учебные демо-окна без необходимости искать комнату.</p>`);
     if(name==='code')await drawCode();
@@ -26,6 +32,79 @@ export function createPanels(dialog,handlers){
     if(name==='tactical'){encounter=createEncounter({guardPosition:0,playerPosition:5,maxTurns:10});encounterSummary='В этой мини-игре настоящий Minimax выбирает решение охранника.';drawTactical();}
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
     dialog.querySelector('[data-close]')?.focus();
+  }
+  async function loadQuestions(){
+    if(questionBank)return questionBank;
+    const response=await fetch('./data/quest-questions.json');
+    if(!response.ok)throw new Error('Не удалось загрузить банк заданий (HTTP '+response.status+')');
+    const pack=await response.json();
+    if(!Array.isArray(pack.questions)||pack.questions.length<100)throw new Error('Банк заданий недоступен');
+    return (questionBank=pack.questions);
+  }
+  async function drawDoor(){
+    if(!activeDoor)return;
+    const door=activeDoor,level=DOOR_DIFFICULTIES[door.difficulty],progress=handlers.doorProgress(door);
+    doorAnswered=false;
+    try{
+      const bank=await loadQuestions();
+      doorQuestion=handlers.getDoorQuestion(door,doorLanguage,bank);
+      const options=Object.entries(doorQuestion.choices).map(([letter,value])=>
+        '<label class="answer-option"><input name="door-answer" type="radio" value="'+esc(letter)+'"><span>'+esc(letter)+'.</span> '+esc(value)+'</label>').join('');
+      inner.innerHTML=shell('ЗАДАНИЕ НА ДВЕРИ',
+        '<div class="door-header"><div><strong>🚪 '+esc(door.id.toUpperCase())+'</strong><p>Нужно решить '+level.steps+' '+(level.steps===1?'задание':'задания')+', чтобы открыть проход.</p></div>'+
+        '<span class="difficulty '+esc(door.difficulty)+'">'+level.label+'</span></div>'+
+        '<div class="door-stages">ЭТАП '+(progress+1)+' ИЗ '+door.required+' · ПРОЙДЕНО: '+progress+'</div>'+
+        '<label class="door-language-label">Язык заданий <select id="door-language"><option value="python" '+(doorLanguage==='python'?'selected':'')+'>Python</option><option value="go" '+(doorLanguage==='go'?'selected':'')+'>Go</option></select></label>'+
+        '<h3>'+esc(doorQuestion.prompt)+'</h3><pre class="challenge-code">'+esc(doorQuestion.codeSnippet)+'</pre>'+
+        '<p class="panel-note">Выбери правильный ответ, затем нажми «ПРОВЕРИТЬ». Ошибки можно исправлять.</p>'+
+        '<div class="answer-options">'+options+'</div>'+
+        '<div class="door-actions"><button id="door-check">ПРОВЕРИТЬ ОТВЕТ</button><button id="door-next" hidden>СЛЕДУЮЩЕЕ ЗАДАНИЕ →</button>'+
+        '<button data-close class="secondary-btn">ЗАКРЫТЬ</button></div>'+
+        '<div id="door-feedback" class="panel-feedback" role="status">Дверь закрыта — выбери ответ.</div>',
+        'EDUCATION / '+doorLanguage.toUpperCase());
+    }catch(err){
+      inner.innerHTML=shell('ДВЕРЬ НЕ ОТКРЫВАЕТСЯ',
+        '<p class="panel-note">'+esc(err.message)+'</p><button data-close>ВЕРНУТЬСЯ</button>','DOOR SYSTEM');
+    }
+  }
+  const dialogues={
+    arman:{
+      name:'АРМАН',line:'Привет, Ерасыл. Здесь знания открывают двери. Подойди к двери и нажми E — появится задача.',
+      choices:[
+        ['С чего начать?','Сначала пройди лёгкую дверь в своём крыле. Внутри выбери Python или Go, затем ответь на вопрос.'],
+        ['Как найти путь?','Карта скрыта, пока ты не исследуешь комнаты. Нажми M для карты, а A* покажет путь только по известным клеткам.'],
+        ['Что за тревога?','При ошибках на сложных дверях тревога может повыситься. Сложность указана цветом прямо над проходом.']
+      ]
+    },
+    ruslan:{
+      name:'РУСЛАН',line:'Я Руслан. У каждой секции свой уровень. Чем дальше, тем сложнее вопросы.',
+      choices:[
+        ['Как работает дверь?','Нажми E рядом с дверью. У средней двери два этапа, у сложной три. После верных ответов она откроется навсегда.'],
+        ['Где задания?','Посмотри на цветные метки у дверей: зелёная — лёгкая, жёлтая — средняя, красная — сложная.'],
+        ['Куда идти?','Исследуй новое южное крыло. Там есть задания и комнаты, которых не было на маленькой карте.']
+      ]
+    },
+    guard1:{
+      name:'ОХРАННИК',line:'Учебное испытание продолжается. Следи за индикатором тревоги.',
+      choices:[['Что здесь делать?','Используй задачи на дверях, чтобы изучать новые зоны.'],['Как ходить?','WASD или стрелки — ходьба; E — действие; M — карта; Esc — закрыть окно.']]
+    },
+    guard2:{
+      name:'СТАРШИЙ ОХРАННИК',line:'Последние секции — только для тех, кто решит сложные задачи.',
+      choices:[['Что означает красная метка?','Сложный уровень: три вопроса подряд.'],['Что будет при ошибке?','Дверь останется закрытой. Ты можешь выбрать другой вариант и попробовать снова.']]
+    }
+  };
+  function drawNpc(npc){
+    if(!npc)return;
+    const dialogue=dialogues[npc.id]||dialogues.guard1;
+    const options=dialogue.choices.map(([label],i)=>
+      '<button type="button" data-npc-response="'+i+'">'+esc(label)+'</button>').join('');
+    inner.innerHTML=shell('РАЗГОВОР: '+esc(dialogue.name),
+      '<div class="npc-scene"><img src="./assets/characters/prisoners/prisoner.png" alt="Персонаж" class="npc-portrait"><div>'+
+      '<span class="scene-number">QAMAL · ПЕРСОНАЖ</span><p id="npc-line">'+esc(dialogue.line)+'</p></div></div>'+
+      '<p class="panel-note">Нажми на вопрос, чтобы получить понятную подсказку:</p>'+
+      '<div class="npc-choices">'+options+'<button data-close>ЗАКОНЧИТЬ РАЗГОВОР</button></div>',
+      'DIALOGUE / PRESS ESC TO CLOSE');
+    inner.dataset.npc=String(npc.id);
   }
   async function drawCode(){
     const lang=handlers.language();
@@ -78,9 +157,51 @@ export function createPanels(dialog,handlers){
       '<div class="filter-row">'+controls+'</div>','AI / WEEK 4');
   }
   function drawCCTV(){inner.innerHTML=shell('QAMAL SURVEILLANCE',`<p class="panel-note">Виртуальные камеры показывают участки той же 2D-карты. Это игровые события, НЕ анализ настоящего видео.</p><div class="filter-row"><button data-camera="CAM-01">CAM-01</button><button data-camera="CAM-02">CAM-02</button><button data-camera="CAM-03">CAM-03</button></div><canvas id="camera-preview" width="288" height="192" class="panel-canvas"></canvas><p class="panel-note" id="camera-status">CAM-01 / ПРОГРАММНАЯ СИМУЛЯЦИЯ</p><button id="camera-visit">ОТМЕТИТЬ ИЗУЧЕНИЕ CCTV</button>`,'SIMULATION / CAMERAS');handlers.drawCamera(inner.querySelector('#camera-preview'),'CAM-01');}
+  dialog.addEventListener('change',e=>{
+    if(e.target?.id==='door-language'&&activeDoor){
+      doorLanguage=e.target.value;
+      void drawDoor();
+    }
+  });
   dialog.addEventListener('click',async e=>{
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
     const id=e.target.id;
+    if(e.target.dataset.npcResponse!==undefined){
+      const person=dialogues[inner.dataset.npc]||dialogues.guard1;
+      const response=person.choices[Number(e.target.dataset.npcResponse)]?.[1];
+      if(response)inner.querySelector('#npc-line').textContent=response;
+      return;
+    }
+    if(id==='door-check'&&activeDoor&&doorQuestion){
+      const selected=inner.querySelector('[name=door-answer]:checked');
+      const out=inner.querySelector('#door-feedback');
+      if(!selected){out.textContent='Выбери A, B, C или D.';return;}
+      if(doorAnswered)return;
+      const result=checkAnswer(doorQuestion,selected.value);
+      out.textContent=result.feedback;
+      if(!result.correct){
+        out.classList.add('feedback-wrong');
+        const penalty=DOOR_DIFFICULTIES[activeDoor.difficulty].penalty;
+        if(penalty)handlers.raiseAlarm(penalty);
+        return;
+      }
+      doorAnswered=true;
+      out.classList.remove('feedback-wrong');
+      const progress=handlers.completeDoorStep(activeDoor);
+      inner.querySelector('#door-check').disabled=true;
+      out.textContent='✓ '+result.feedback+'  ЭТАП '+progress.solved+'/'+progress.required+
+        (progress.unlocked?' · ДВЕРЬ ОТКРЫТА! Теперь можно пройти.':' · Ещё одно задание!');
+      if(progress.unlocked){
+        inner.querySelector('#door-next').textContent='ДВЕРЬ ОТКРЫТА — ЗАКРЫТЬ ОКНО';
+        inner.querySelector('#door-next').hidden=false;
+      }else inner.querySelector('#door-next').hidden=false;
+      return;
+    }
+    if(id==='door-next'){
+      if(activeDoor&&handlers.doorProgress(activeDoor)>=activeDoor.required)close();
+      else await drawDoor();
+      return;
+    }
     if(e.target.dataset.camera){const cam=e.target.dataset.camera;handlers.drawCamera(inner.querySelector('#camera-preview'),cam);inner.querySelector('#camera-status').textContent=`${cam} / ВИРТУАЛЬНАЯ КАМЕРА`;return;}
     if(id==='code-check'){
       const fb=inner.querySelector('#code-feedback');
