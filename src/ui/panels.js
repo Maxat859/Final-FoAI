@@ -33,7 +33,7 @@ export function createPanels(dialog,handlers){
     if(name==='lab')handlers.lab.render();
     if(name==='tactical'){encounter=createEncounter({guardPosition:0,playerPosition:5,maxTurns:10});encounterSummary='В этой мини-игре настоящий Minimax выбирает решение охранника.';drawTactical();}
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
-    dialog.querySelector('[data-close]')?.focus();
+    if(name!=='door'&&name!=='npc')dialog.querySelector('[data-close]')?.focus();
   }
   function drawCode(){
     const language=handlers.language();
@@ -174,6 +174,15 @@ export function createPanels(dialog,handlers){
     return true;
   }
   function drawCCTV(){inner.innerHTML=shell('QAMAL SURVEILLANCE',`<p class="panel-note">Виртуальные камеры показывают участки той же 2D-карты. Это игровые события, НЕ анализ настоящего видео.</p><div class="filter-row"><button data-camera="CAM-01">CAM-01</button><button data-camera="CAM-02">CAM-02</button><button data-camera="CAM-03">CAM-03</button></div><canvas id="camera-preview" width="288" height="192" class="panel-canvas"></canvas><p class="panel-note" id="camera-status">CAM-01 / ПРОГРАММНАЯ СИМУЛЯЦИЯ</p><button id="camera-visit">ОТМЕТИТЬ ИЗУЧЕНИЕ CCTV</button>`,'SIMULATION / CAMERAS');handlers.drawCamera(inner.querySelector('#camera-preview'),'CAM-01');}
+  dialog.addEventListener('keydown',event=>{
+    if(event.code!=='Enter'||event.target.tagName!=='INPUT')return;
+    if(active==='door'&&event.target.id==='door-answer'){
+      event.preventDefault();inner.querySelector('#door-check')?.click();
+    }
+    if(active==='code'&&event.target.id==='code-free-answer'){
+      event.preventDefault();inner.querySelector('#code-check')?.click();
+    }
+  });
   dialog.addEventListener('change',e=>{
     if(e.target.id==='practice-difficulty'){practiceDifficulty=e.target.value;practiceIndex=0;drawCode();}
   });
