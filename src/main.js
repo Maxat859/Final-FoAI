@@ -212,7 +212,7 @@ async function init(){
       }
       return;
     }
-    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea,button'))return;
+    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
     if(!$('tools-popup').hidden)return;
     if(event.code==='KeyE'){event.preventDefault();interact();return;}
     if(event.code==='KeyM'){event.preventDefault();void panels.open('map');return;}
