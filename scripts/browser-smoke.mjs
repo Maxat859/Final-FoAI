@@ -21,6 +21,7 @@ try {
 
   await page.keyboard.press('e');
   await page.locator('#door-check').waitFor({state:'visible'});
+  await page.screenshot({path:'/tmp/qamal-door-challenge.png',fullPage:true});
   assert.match(await page.locator('#dialog-inner').innerText(),/ДВЕРЬ/);
 
   const expected=await page.evaluate(async ()=>{
@@ -50,6 +51,7 @@ try {
   await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.querySelector('.npc-words')?.textContent?.length>5);
   assert.ok((await page.locator('.npc-words').innerText()).length>5);
+  await page.screenshot({path:'/tmp/qamal-npc-dialogue.png',fullPage:true});
   await page.keyboard.press('Escape');
 
   await page.locator('#tools-toggle').click();
