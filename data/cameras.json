@@ -1,0 +1,53 @@
+{
+  "mapId": "qamal01",
+  "cameras": [
+    {
+      "id": "CAM-01",
+      "label": "Камера: Центральный коридор",
+      "zoneId": "corridor",
+      "position": {
+        "row": 5,
+        "col": 8
+      },
+      "viewBounds": {
+        "minRow": 4,
+        "maxRow": 7,
+        "minCol": 3,
+        "maxCol": 13
+      },
+      "active": true
+    },
+    {
+      "id": "CAM-02",
+      "label": "Камера: Комната наблюдения",
+      "zoneId": "surveillance",
+      "position": {
+        "row": 8,
+        "col": 9
+      },
+      "viewBounds": {
+        "minRow": 8,
+        "maxRow": 12,
+        "minCol": 7,
+        "maxCol": 11
+      },
+      "active": true
+    },
+    {
+      "id": "CAM-03",
+      "label": "Камера: Выходной блок",
+      "zoneId": "exit_wing",
+      "position": {
+        "row": 8,
+        "col": 15
+      },
+      "viewBounds": {
+        "minRow": 8,
+        "maxRow": 12,
+        "minCol": 12,
+        "maxCol": 16
+      },
+      "active": true
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "id": "qamal01",
+  "rows": 14,
+  "cols": 18,
+  "tiles": [
+    "##################",
+    "#S...#......#....#",
+    "#..B.#......#....#",
+    "#....D......D....#",
+    "###D#####D#####D##",
+    "#................#",
+    "#................#",
+    "##D#####D#####D###",
+    "#.....#....#.....#",
+    "#.....#....#.....#",
+    "#.....D....D....E#",
+    "#.....#....#.....#",
+    "#.....#....#.....#",
+    "##################"
+  ],
+  "legend": {
+    "#": "wall",
+    ".": "floor",
+    "S": "start",
+    "E": "exit",
+    "D": "door",
+    "B": "bars"
+  },
+  "tileSprites": {
+    "wall": "tile.wall.concrete",
+    "floor": "tile.floor.concrete",
+    "start": "tile.floor.concrete",
+    "exit": "tile.door.metal",
+    "door": "tile.door.metal",
+    "bars": "tile.bars.metal"
+  },
+  "zones": [
+    {
+      "id": "cell_block",
+      "label": "Камерный блок",
+      "access": "public",
+      "bounds": {
+        "minRow": 1,
+        "maxRow": 3,
+        "minCol": 1,
+        "maxCol": 4
+      }
+    },
+    {
+      "id": "classroom",
+      "label": "Учебный блок",
+      "access": "public",
+      "bounds": {
+        "minRow": 1,
+        "maxRow": 3,
+        "minCol": 6,
+        "maxCol": 11
+      }
+    },
+    {
+      "id": "corridor",
+      "label": "Центральный коридор",
+      "access": "public",
+      "bounds": {
+        "minRow": 5,
+        "maxRow": 6,
+        "minCol": 1,
+        "maxCol": 16
+      }
+    },
+    {
+      "id": "surveillance",
+      "label": "Комната наблюдения",
+      "access": "restricted",
+      "bounds": {
+        "minRow": 8,
+        "maxRow": 12,
+        "minCol": 7,
+        "maxCol": 10
+      }
+    },
+    {
+      "id": "exit_wing",
+      "label": "Выходной блок",
+      "access": "restricted",
+      "bounds": {
+        "minRow": 8,
+        "maxRow": 12,
+        "minCol": 12,
+        "maxCol": 16
+      }
+    }
+  ],
+  "props": [
+    {
+      "id": "BED-01",
+      "type": "bed",
+      "spriteId": "prop.prison.bed",
+      "row": 2,
+      "col": 1
+    },
+    {
+      "id": "TERM-01",
+      "type": "terminal",
+      "spriteId": "prop.terminal",
+      "row": 1,
+      "col": 9
+    },
+    {
+      "id": "TERM-02",
+      "type": "terminal",
+      "spriteId": "prop.terminal",
+      "row": 9,
+      "col": 8
+    }
+  ],
+  "cameras": [
+    "CAM-01",
+    "CAM-02",
+    "CAM-03"
+  ]
+}
