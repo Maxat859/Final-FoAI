@@ -157,3 +157,19 @@ kbd { display: inline-flex; justify-content:center; align-items:center; min-widt
 .result-hero {padding:25px;text-align:center;background:#244638;color:#b4ebc8;border:2px solid #64ad82;font-size:22px;font-weight:900;}
 button[disabled] {opacity:.42;cursor:not-allowed;}
 @media(max-width:680px){.dossier-layout,.lab-grid{grid-template-columns:1fr;}.panel-actions{grid-template-columns:1fr 1fr;}.dialog-backdrop{padding:8px;}.dialog-card{max-height:96dvh;padding:14px;}}
+
+
+/* Chapter 01: in-world story, turn-based encounter and live surveillance HUD */
+.live-guard-status{display:flex;align-items:center;gap:8px;margin-top:10px;color:#c7d6df;font-size:10px;letter-spacing:.08em}
+.live-guard-status strong{color:#f0c676}
+.led-dot{width:7px;height:7px;background:#76c3a0;box-shadow:0 0 8px #76c3a0}
+.live-events{border:1px solid #425a67;background:#132635;color:#86b6c5;padding:10px;font-size:10px;line-height:1.65;min-height:32px}
+.chapter-intro{background:linear-gradient(130deg,#1a3040,#0b1824);padding:20px;border-left:4px solid #e1b25c}
+.chapter-intro h3{font-size:clamp(18px,3vw,27px);font-weight:800;color:#f4d18c;letter-spacing:.04em;margin:18px 0}
+.chapter-intro p{max-width:68ch;color:#d5e0e8}
+.scene-number{font-size:11px;color:#e3bd72;letter-spacing:.25em}
+.tactic-board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px;background:#09131f;border:3px solid #395366;padding:12px 7px;margin:16px 0}
+.tactic-cell{aspect-ratio:1;display:grid;place-items:center;border:1px solid #42586a;background:#20374b;color:#526d7d;font-weight:800;font-size:clamp(10px,2vw,20px)}
+.tactic-cell.guard{background:#753f4d;color:#ffd0ba;border-color:#b66b69}
+.tactic-cell.hero{background:#9c7838;color:#fff2b6;border-color:#d4aa61}
+@media(max-width:540px){.tactic-board{padding:7px 3px;gap:1px}.tactic-cell{font-size:11px}}
