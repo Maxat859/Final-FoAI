@@ -1,6 +1,6 @@
 /* QAMAL: PRISON BREAK — Participant #4 frontend, Pixel Art + Bayes + dossier UI.
    Search/CSP/Minimax/DecisionTree are separate participant modules and never silently faked. */
-import {ASSET_IDS,COLS,DEFAULT_ENTITIES,FLOORS,STAIR_LINKS,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS,createLevel,zoneAt,isPassable} from './config.js';
+import {ASSET_IDS,BLOCKED_TILES,COLS,DEFAULT_ENTITIES,FLOORS,STAIR_LINKS,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS,createLevel,zoneAt,isPassable} from './config.js';
 import {START_POSITION,DIRECTIONS,computeFieldOfView,attemptMove,nearestInteraction} from './game/player.js';
 import {getCameraOffset} from './game/camera.js';
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
@@ -206,7 +206,7 @@ async function init(){
       const key='portrait.'+person;
       return './'+(assets.manifest?.sprites?.[key]||'assets/characters/prisoners/prisoner.png');
     },
-    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>tile==='D'&&!unlockedDoors.has(doorId(r,c))?'#':tile)),
+    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>BLOCKED_TILES.has(tile)||(tile==='D'&&!unlockedDoors.has(doorId(r,c)))?'#':tile)),
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
       'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18},
