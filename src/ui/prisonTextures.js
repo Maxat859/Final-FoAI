@@ -81,6 +81,18 @@ function prop(ctx,t,x,y){
     R(ctx,x+7,y+7,18,16,'#c6d4d1');R(ctx,x+10,y+10,12,10,'#5d9aab');
     R(ctx,x+14,y+2,4,9,'#ccd3c5');R(ctx,x+11,y+4,10,3,'#a3b0ac');
     D(ctx,x+15,y+17,3,'#1e4657');break;
+  case 'r': // library bookshelf with colorful spines
+    metal(ctx,x+2,y+2,28,29,'#ac936d','#433e3d');
+    R(ctx,x+5,y+5,22,23,'#47352d');
+    for(let shelf=0;shelf<3;shelf++){
+      const yy=y+7+shelf*7;
+      for(let book=0;book<7;book++){
+        const colors=['#698da4','#d1a76b','#74947b','#a8665f','#c1bd91'];
+        R(ctx,x+6+book*3,yy,2,5,colors[(book+shelf*2)%colors.length]);
+      }
+      R(ctx,x+5,yy+5,22,2,'#b9986c');
+    }
+    R(ctx,x+4,y+29,24,2,'#2a292b');break;
   case 'l': // locker
     metal(ctx,x+3,y+2,26,29,'#9ca5a4','#2a3e4a');
     R(ctx,x+7,y+7,18,20,'#536875');
