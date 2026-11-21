@@ -120,6 +120,22 @@ export function createPanels(dialog,handlers){
         ['Старший охранник','Система патрулирования включена. Не торопись с ответами.'],
         ['Ерасыл','Почему у меня повышается тревога?'],
         ['Старший охранник','На некоторых контрольных точках неверное решение вызывает сигнал. Проверяй код внимательно.']
+      ],
+      daniyar:[
+        ['Данияр','Привет, Ерасыл! Терминалы открываются задачами на Python или Go.'],
+        ['Ерасыл','Сложность случайная?'],
+        ['Данияр','Нет, она зависит от сектора. Начальные двери — лёгкие, дальше — средние и сложные.'],
+        ['Данияр','Если не понимаешь ответ, попробуй другой вариант задания на том же терминале.']
+      ],
+      madina:[
+        ['Мадина','Данные датчиков бывают неточными. Один сигнал тревоги ещё не доказывает опасность.'],
+        ['Ерасыл','И как проверить вероятность?'],
+        ['Мадина','Открой инструмент Bayes в меню ☰. Измени начальную вероятность и чувствительность датчика — увидишь результат.']
+      ],
+      timur:[
+        ['Тимур','Я видел твоё досье в архиве. Там есть запись, которая вызывает сомнения.'],
+        ['Ерасыл','Можно ли её изменить?'],
+        ['Тимур','Открой виртуальный архив и отметь неверные наблюдения. Каждое действие попадёт в журнал.']
       ]
     };
     return scripts[person]??[
@@ -132,8 +148,7 @@ export function createPanels(dialog,handlers){
     npcTimer=null; npcFullyTyped=false;
     if(npcIndex>=npcScript.length){close();return;}
     const [speaker,phrase]=npcScript[npcIndex];
-    const portraitId=speaker==='Ерасыл'?'erasyl':speaker==='Арман'?'arman':
-      speaker==='Руслан'?'ruslan':speaker==='Охранник'||speaker==='Старший охранник'?'guard':'default';
+    const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard'})[speaker]||'default';
     const portrait=handlers.portraitFor?.(portraitId)||'./assets/characters/prisoners/prisoner.png';
     inner.innerHTML='<div class="npc-dialog">'+
       '<div class="npc-portrait portrait-'+portraitId+'"><img src="'+esc(portrait)+'" alt="Портрет '+esc(speaker)+'"></div>'+
