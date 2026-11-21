@@ -1,216 +1,116 @@
-/*
- QAMAL: PRISON BREAK
- Первый игровой прототип: меню, текстуры, карта и движение.
-*/
+/* QAMAL: PRISON BREAK — Participant #4 frontend, Pixel Art + Bayes + dossier UI.
+   Search/CSP/Minimax/DecisionTree are separate participant modules and never silently faked. */
+import {ASSET_IDS,COLS,DEFAULT_ENTITIES,ROWS,TILE_SIZE,createLevel,zoneAt} from './config.js';
+import {START_POSITION,DIRECTIONS,discover,attemptMove,nearestInteraction} from './game/player.js';
+import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
+import {createStorage} from './storage/indexedDb.js';
+import {loadAssetManifest} from './ui/assetLoader.js';
+import {createRenderer} from './ui/gameCanvas.js';
+import {createPanels} from './ui/panels.js';
+import {createDossierStore} from './surveillance/dossierStore.js';
+import {createDossierUI} from './ui/dossierUI.js';
+import {createTrainingLabUI} from './ui/trainingLabUI.js';
 
-// Экраны и кнопки из index.html
-const mainMenu = document.getElementById("main-menu");
-const settingsScreen = document.getElementById("settings-screen");
-const gameScreen = document.getElementById("game-screen");
-
-const playBtn = document.getElementById("play-btn");
-const settingsBtn = document.getElementById("settings-btn");
-const backBtn = document.getElementById("back-btn");
-const exitBtn = document.getElementById("exit-btn");
-const languageSelect = document.getElementById("language-select");
-
-const canvas = document.getElementById("game-canvas");
-const ctx = canvas.getContext("2d");
-const screens = [mainMenu, settingsScreen, gameScreen];
-
-function showScreen(targetScreen) {
-    for (const screen of screens) {
-        screen.hidden = screen !== targetScreen;
-    }
+const $=id=>document.getElementById(id);
+const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
+const canvas=$('game-canvas'),mini=$('mini-map');
+const assets={images:new Map(),manifest:null};
+const renderer=createRenderer(canvas,mini,assets);
+const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
+const storage=createStorage();
+let player={...START_POSITION},seen=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
+let cspModule=null,panels=null;
+function show(screen){for(const item of screens)item.hidden=item!==screen;}
+function message(value){$('game-message').textContent=value;}
+function render(){
+  renderer.frame({world,player,entities,seen,route});
+  $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
+  $('zone-name').textContent=zoneAt(player.row,player.col);
+  $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
+  $('alert-value').textContent=`${alarm} / 100`;
+  $('alert-fill').style.width=`${alarm}%`;
+  $('objective').textContent=objective(mission);
+  $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
 }
-
-// Сохраняем выбор языка для будущих заданий с программированием
-const STORAGE_KEY = "qamal.language";
-
-try {
-    const savedLanguage = localStorage.getItem(STORAGE_KEY);
-    if (savedLanguage === "python" || savedLanguage === "go") {
-        languageSelect.value = savedLanguage;
-    }
-} catch (error) {
-    console.warn("Настройки пока не сохранены:", error);
+async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm});}
+function mark(key){mission=markMission(mission,key);message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);render();void persist();}
+function raiseAlarm(value){alarm=Math.min(100,alarm+value);render();void persist();}
+function updateAssets(msg){$('asset-status').textContent=msg;}
+function interact(){
+  const target=nearestInteraction(player,world,entities);
+  if(!target){message('Рядом нет объекта. Исследуй карту или используй меню справа.');return;}
+  if(target.kind==='npc'){message(target.role==='mentor'?'Арман: «Начни с учебных задач, потом планируй путь».':`${target.name}: «Будь внимателен к условиям задания».`);return;}
+  const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
+  panels.open(mapping[target.kind]);
 }
-
-languageSelect.addEventListener("change", () => {
-    try {
-        localStorage.setItem(STORAGE_KEY, languageSelect.value);
-    } catch (error) {
-        console.warn("Не удалось сохранить язык:", error);
-    }
-});
-
-// Размер каждой клетки: 32 на 32 пикселя
-const TILE_SIZE = 32;
-
-// # = стена; . = пол; D = закрытая дверь; B = решётка
-const testMap = [
-    "####################",
-    "#..................#",
-    "#..................#",
-    "#......#####.......#",
-    "#......#...#.......#",
-    "#......D...B.......#",
-    "#......#...#.......#",
-    "#......#####.......#",
-    "#..................#",
-    "#...###............#",
-    "#..................#",
-    "####################"
-];
-
-canvas.width = testMap[0].length * TILE_SIZE;
-canvas.height = testMap.length * TILE_SIZE;
-ctx.imageSmoothingEnabled = false;
-
-// Увеличиваем отображение карты, сохраняя её пиксельный стиль
-canvas.style.width = "min(90vw, 960px)";
-canvas.style.height = "auto";
-canvas.style.maxWidth = "none";
-canvas.style.display = "block";
-canvas.style.imageRendering = "pixelated";
-
-const player = { col: 2, row: 8 };
-const guard = { col: 9, row: 5 };
-const bed = { col: 3, row: 2 };
-
-// Пути отсчитываются от index.html, а не от src/main.js
-const texturePaths = {
-    floor: "./assets/floor_concrete.png",
-    wall: "./assets/wall_concrete.png",
-    prisoner: "./assets/prisoner_idle.png",
-    guard: "./assets/guard_idle.png",
-    door: "./assets/door_closed.png",
-    bars: "./assets/bars.png",
-    bed: "./assets/prison_bed.png"
-};
-
-const textures = {};
-
-for (const [name, path] of Object.entries(texturePaths)) {
-    const img = new Image();
-    textures[name] = img;
-
-    img.addEventListener("load", () => {
-        if (!gameScreen.hidden) drawGame();
-    });
-
-    img.addEventListener("error", () => {
-        console.warn("Не удалось загрузить текстуру:", path);
-    });
-
-    img.src = path;
+function move(direction){const outcome=attemptMove(player,direction,world,entities);
+  if(!outcome.moved){message(outcome.reason);return;}
+  player=outcome.player;
+  discover(world,seen,player.row,player.col,3);
+  if(world[player.row][player.col]==='E'){
+    if(canFinish(mission)){mark('finished');panels.open('success');}
+    else message('Выход найден! Сначала выполни учебные контрольные точки.');
+  }else message(`${zoneAt(player.row,player.col)} · клетка (${player.row},${player.col}) · нажми E рядом с объектом.`);
+  route=[];render();void persist();
 }
-
-// Если файл картинки пока недоступен, рисуем цветную заглушку
-function drawTexture(name, x, y, width, height, fallbackColor) {
-    const img = textures[name];
-
-    if (img && img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, x, y, width, height);
-    } else {
-        ctx.fillStyle = fallbackColor;
-        ctx.fillRect(x, y, width, height);
-    }
+async function init(){
+  show($('main-menu'));
+  const previous=await storage.get('progress',null);
+  if(previous){
+    if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col))player={...START_POSITION,...previous.player};
+    if(Array.isArray(previous.seen))seen=new Set(previous.seen.filter(x=>typeof x==='string'));
+    mission={...DEFAULT_MISSION,...previous.mission};
+    alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
+  }
+  discover(world,seen,player.row,player.col,3);
+  let manifest=null;
+  try{const loaded=await loadAssetManifest();manifest=loaded.manifest;
+    assets.images=loaded.images;assets.manifest=manifest;
+    updateAssets(`PIXEL ART: ${loaded.loaded}/${loaded.total} · ${loaded.errors.length?'Недоступны: '+loaded.errors.join(', '):'все спрайты загружены'}`);
+  }catch(error){updateAssets(`Текстуры недоступны: ${error.message}. Используются пиксельные заглушки.`);}
+  const dossiersStore=await createDossierStore(storage,manifest);
+  const inner=$('dialog-inner');
+  const dossierUI=createDossierUI(inner,dossiersStore);
+  const labUI=createTrainingLabUI(inner);await labUI.load();
+  panels=createPanels($('game-dialog'),{
+    dossiers:dossierUI,lab:labUI,
+    language:()=>$('language-select').value,mark,raiseAlarm,
+    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world,
+    position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
+    drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
+      'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18}
+    }[cam]),
+    drawMap:target=>{
+      const context=target.getContext('2d'),cellW=target.width/COLS,cellH=target.height/ROWS;
+      context.fillStyle='#08111c';context.fillRect(0,0,target.width,target.height);
+      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(seen.has(`${r},${c}`)){
+        context.fillStyle=world[r][c]==='#'?'#617587':world[r][c]==='E'?'#76c69d':'#2d4858';
+        context.fillRect(c*cellW,r*cellH,cellW+1,cellH+1);
+      }
+      context.fillStyle='#f2c76e';context.fillRect(player.col*cellW-2,player.row*cellH-2,6,6);
+    },
+    setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
+  });
+  $('play-btn').addEventListener('click',()=>{show($('game-screen'));render();message('Глава 1: используй WASD, E, M. Быстрые задания доступны справа.');});
+  $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
+  $('back-btn').addEventListener('click',()=>show($('main-menu')));
+  $('exit-btn').addEventListener('click',()=>show($('main-menu')));
+  $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
+  const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
+  $('panel-actions').addEventListener('click',event=>{
+    const button=event.target.closest('[data-panel]');if(button)void panels.open(button.dataset.panel);
+  });
+  document.addEventListener('keydown',event=>{
+    if($('game-screen').hidden)return;
+    if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else{show($('main-menu'));}return;}
+    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea,button'))return;
+    if(panels.isOpen())return;
+    if(event.code==='KeyE'){event.preventDefault();interact();return;}
+    if(event.code==='KeyM'){event.preventDefault();void panels.open('map');return;}
+    const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
+  });
+  render();
+  message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size};
 }
-
-function drawGame() {
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Сначала пол, затем стены, двери и решётки
-    for (let row = 0; row < testMap.length; row++) {
-        for (let col = 0; col < testMap[row].length; col++) {
-            const tile = testMap[row][col];
-            const x = col * TILE_SIZE;
-            const y = row * TILE_SIZE;
-
-            drawTexture("floor", x, y, TILE_SIZE, TILE_SIZE, "#263748");
-
-            if (tile === "#") {
-                drawTexture("wall", x, y, TILE_SIZE, TILE_SIZE, "#45586a");
-            } else if (tile === "D") {
-                drawTexture("door", x, y - 16, TILE_SIZE, 48, "#875e38");
-            } else if (tile === "B") {
-                drawTexture("bars", x, y, TILE_SIZE, TILE_SIZE, "#7f91a3");
-            }
-        }
-    }
-
-    // Предметы и персонажи рисуются поверх карты
-    drawTexture("bed", bed.col * TILE_SIZE, bed.row * TILE_SIZE,
-        TILE_SIZE, TILE_SIZE * 2, "#715a50");
-
-    drawTexture("guard", guard.col * TILE_SIZE, guard.row * TILE_SIZE - 16,
-        TILE_SIZE, 48, "#4383b9");
-
-    drawTexture("prisoner", player.col * TILE_SIZE, player.row * TILE_SIZE - 16,
-        TILE_SIZE, 48, "#e39c45");
-}
-
-function canMoveTo(col, row) {
-    if (row < 0 || row >= testMap.length) return false;
-    if (col < 0 || col >= testMap[row].length) return false;
-
-    // Точка обозначает свободный пол; двери, стены и решётки закрыты
-    if (testMap[row][col] !== ".") return false;
-
-    // Кровать занимает две клетки
-    if (col === bed.col && (row === bed.row || row === bed.row + 1)) {
-        return false;
-    }
-
-    // Пока охранник стоит на месте и тоже занимает клетку
-    if (col === guard.col && row === guard.row) return false;
-
-    return true;
-}
-
-// Управление: стрелки или WASD
-window.addEventListener("keydown", (event) => {
-    if (gameScreen.hidden) return;
-
-    const directions = {
-        arrowup: [0, -1], w: [0, -1],
-        arrowdown: [0, 1], s: [0, 1],
-        arrowleft: [-1, 0], a: [-1, 0],
-        arrowright: [1, 0], d: [1, 0]
-    };
-
-    const direction = directions[event.key.toLowerCase()];
-    if (!direction) return;
-
-    event.preventDefault();
-
-    const nextCol = player.col + direction[0];
-    const nextRow = player.row + direction[1];
-
-    if (canMoveTo(nextCol, nextRow)) {
-        player.col = nextCol;
-        player.row = nextRow;
-        drawGame();
-    }
-});
-
-playBtn.addEventListener("click", () => {
-    showScreen(gameScreen);
-    drawGame();
-});
-
-settingsBtn.addEventListener("click", () => {
-    showScreen(settingsScreen);
-});
-
-backBtn.addEventListener("click", () => {
-    showScreen(mainMenu);
-});
-
-exitBtn.addEventListener("click", () => {
-    showScreen(mainMenu);
-});
-
-showScreen(mainMenu);
+init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});

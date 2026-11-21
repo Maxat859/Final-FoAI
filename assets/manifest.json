@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "tileSize": 32,
+  "sprites": {
+    "tile.floor.concrete": "assets/tiles/floors/concrete.png",
+    "tile.floor.dark": "assets/tiles/floors/dark_concrete.png",
+    "tile.wall.concrete": "assets/tiles/walls/concrete.png",
+    "tile.door.metal": "assets/tiles/doors/metal.png",
+    "tile.door.bars": "assets/tiles/doors/bars.png",
+    "tile.door.exit": "assets/tiles/doors/exit.png",
+    "tile.prop.bed": "assets/tiles/props/bed.png",
+    "tile.prop.desk": "assets/tiles/props/desk.png",
+    "tile.prop.terminal": "assets/tiles/props/terminal.png",
+    "tile.prop.camera": "assets/tiles/props/camera.png",
+    "character.player.erasyl": "assets/characters/player/erasyl.png",
+    "character.guard.blue": "assets/characters/guards/guard_blue.png",
+    "character.guard.senior": "assets/characters/guards/guard_senior.png",
+    "character.prisoner.generic": "assets/characters/prisoners/prisoner.png",
+    "portrait.default": "assets/characters/prisoners/prisoner.png",
+    "portrait.erasyl": "assets/characters/player/erasyl.png",
+    "portrait.arman": "assets/characters/prisoners/prisoner.png",
+    "portrait.ruslan": "assets/characters/prisoners/prisoner.png",
+    "portrait.daniyar": "assets/characters/prisoners/prisoner.png",
+    "portrait.timur": "assets/characters/prisoners/prisoner.png",
+    "portrait.madina": "assets/characters/prisoners/prisoner.png",
+    "portrait.npc_1": "assets/characters/prisoners/prisoner.png",
+    "portrait.npc_2": "assets/characters/prisoners/prisoner.png",
+    "portrait.npc_3": "assets/characters/prisoners/prisoner.png",
+    "portrait.npc_4": "assets/characters/prisoners/prisoner.png",
+    "character.prisoner.default": "assets/characters/prisoners/prisoner.png"
+  }
+}
