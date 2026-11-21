@@ -306,3 +306,15 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
 .wake-start{display:inline-block;margin:15px 0 2px;min-height:49px;padding:11px 22px!important;background:#dfb87e!important;border:2px solid #e9d2a2!important;color:#1a2d37!important;font-weight:900!important}
 @media(max-height:680px){.wake-scene{padding:8px 15px}.wake-portrait{width:80px;height:80px;margin-bottom:6px}.wake-scene p{margin:6px auto;font-size:12px}.wake-scene h3{font-size:19px;margin:5px}.wake-scene .wake-hint{padding:7px}.wake-start{margin:7px 0 1px;min-height:39px}}
 @media(max-width:620px){.hud-floor-indicator{margin-top:5px;font-size:8px;padding:3px 6px}.wake-scene{padding:10px}.wake-scene p{font-size:12px}}
+
+
+/* Keep messages clear of the two-line title and floor badge. */
+@media(min-width:850px){
+  .world-screen .world-toast{top:118px;left:17px;max-width:365px;background:rgba(8,18,30,.82)}
+}
+@media(min-width:620px) and (max-width:849px){
+  .world-screen .world-toast{top:106px;left:14px;max-width:310px}
+}
+@media(max-width:619px){
+  .world-screen .world-toast{top:98px;left:8px;max-width:min(330px,calc(100vw - 16px))}
+}
