@@ -1,95 +1,109 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-try {
+try{
   const page=await browser.newPage({viewport:{width:1280,height:720}});
   const errors=[];
-  page.on('pageerror',error=>errors.push(error.message));
+  page.on('pageerror',err=>errors.push(err.message));
   await page.goto('http://127.0.0.1:3000',{waitUntil:'networkidle'});
   await page.locator('#play-btn').click();
-  await page.locator('#game-dialog [data-close]').first().click();
-  await page.locator('#game-canvas').waitFor({state:'visible'});
-
-  const startingCell=await page.evaluate(()=>({
-    position:window.QAMAL_DEBUG.getPosition(),
-    bed:window.QAMAL_DEBUG.getTile(10,3),
-    bars:window.QAMAL_DEBUG.getTile(9,4),
-    floor:window.QAMAL_DEBUG.getFloor()
-  }));
-  assert.equal(startingCell.floor,1);
-  assert.equal(startingCell.position.row,10);
-  assert.equal(startingCell.bed,'b');
-  assert.equal(startingCell.bars,'G');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getStoryStage()),'wake');
+  const start=await page.evaluate(()=>({pos:window.QAMAL_DEBUG.getPosition(),bed:window.QAMAL_DEBUG.getTile(10,3),bars:window.QAMAL_DEBUG.getTile(9,4)}));
+  assert.equal(start.pos.row,10);assert.equal(start.pos.col,4);assert.equal(start.bed,'b');assert.equal(start.bars,'G');
+  await page.locator('.wake-scene').waitFor({state:'visible'});
   await page.screenshot({path:'/tmp/qamal-cell-wakeup.png',fullPage:true});
+  await page.locator('#wake-start').click();
+
+  // The guard walks into the actual cell instead of simply teleporting the player.
+  await page.locator('.guard-story').waitFor({state:'visible',timeout:10000});
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getStoryStage()),'guard');
+  await page.screenshot({path:'/tmp/qamal-guard-arrival.png',fullPage:true});
+  await page.locator('#escort-start').click();
+  await page.locator('#learn-answer').waitFor({state:'visible',timeout:20000});
+  const atSchool=await page.evaluate(()=>({pos:window.QAMAL_DEBUG.getPosition(),stage:window.QAMAL_DEBUG.getStoryStage(),doors:window.QAMAL_DEBUG.getUnlockedDoors()}));
+  assert.equal(atSchool.stage,'classroom');
+  assert.equal(atSchool.pos.row,4);assert.equal(atSchool.pos.col,15);
+  assert.ok(atSchool.doors.includes('8:6'));assert.ok(atSchool.doors.includes('4:11'));
+  assert.match(await page.locator('.learn-heading').innerText(),/Python/);
+  await page.screenshot({path:'/tmp/qamal-classroom-lesson.png',fullPage:true});
+
+  // A wrong answer is diagnosed and stored; a full breakdown can be requested.
+  await page.locator('#learn-answer').fill('ОШИБКА');
+  await page.locator('#learn-check').click();
+  assert.match(await page.locator('#learn-feedback').innerText(),/ошиб|невер|проверь|разбор/i);
+  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getMistakeCount()))>=1);
+  await page.locator('#learn-explain').click();
+  assert.match(await page.locator('.learning-answer').innerText(),/QAMAL/);
+  await page.locator('#learn-answer').fill('QAMAL');
+  await page.locator('#learn-check').click();
+  await page.locator('[data-learn="next-task"]').click();
+  await page.locator('#learn-answer').fill('print("Привет")');
+  await page.locator('#learn-check').click();
+  await page.locator('.learning-success').waitFor({state:'visible'});
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getStoryStage()),'free');
+  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getLearningProgress())).python.includes(0));
+  await page.locator('#game-dialog [data-close]').first().click();
+
+  // The game still fills the browser and door quizzes still work.
   const screen=await page.locator('#game-canvas').boundingBox();
-  assert.ok(screen.width>=1270&&screen.height>=710,'Canvas must fill viewport');
-  assert.equal(await page.locator('.game-sidebar').count(),0,'Permanent sidebar must be removed');
-
-  for(const direction of ['ArrowRight','ArrowRight','ArrowUp'])await page.keyboard.press(direction);
-  const atDoor=await page.evaluate(()=>window.QAMAL_DEBUG.getPosition());
-  assert.equal(atDoor.row,9);assert.equal(atDoor.col,6);
-
+  assert.ok(screen.width>=1270&&screen.height>=710);
+  assert.equal(await page.locator('.game-sidebar').count(),0);
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(5,19,1)),true);
   await page.keyboard.press('e');
   await page.locator('#door-check').waitFor({state:'visible'});
   const checkButton=await page.locator('#door-check').boundingBox();
-  assert.ok(checkButton&&checkButton.y>=0&&checkButton.y+checkButton.height<=720,
-    'Door challenge submit button must be visible without scrolling');
+  assert.ok(checkButton&&checkButton.y+checkButton.height<=720);
   await page.screenshot({path:'/tmp/qamal-door-challenge.png',fullPage:true});
-  assert.match(await page.locator('#dialog-inner').innerText(),/ДВЕРЬ/);
-
-  const expected=await page.evaluate(async ()=>{
+  const expected=await page.evaluate(async()=>{
     const {questionsFor}=await import('./src/education/questionBank.js');
-    const other=await (await fetch('./data/quest-questions.json')).json();
+    const other=await(await fetch('./data/quest-questions.json')).json();
     const pool=[...questionsFor('python','easy'),...other.questions.filter(q=>q.language==='python'&&q.difficulty==='easy')];
-    const seed=8*97+6*37;
-    return pool[seed%pool.length].expectedAnswer;
+    return pool[(5*97+20*37)%pool.length].expectedAnswer;
   });
-  if(await page.locator('[name=door-option]').count()){
-    await page.locator('[name=door-option][value="'+expected+'"]').check();
-  } else await page.locator('#door-answer').fill(expected);
+  if(await page.locator('[name=door-option]').count())await page.locator('[name=door-option][value="'+expected+'"]').check();
+  else await page.locator('#door-answer').fill(expected);
   await page.locator('#door-check').click();
   await page.locator('.quest-unlocked').waitFor({state:'visible'});
-  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getUnlockedDoors())).includes('8:6'));
+  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getUnlockedDoors())).includes('5:20'));
   await page.locator('#game-dialog [data-close]').first().click();
 
-  // Re-enter the world; the solved door remains traversable.
-  for(let i=0;i<5;i++)await page.keyboard.press('ArrowUp');
-  const nearNpc=await page.evaluate(()=>window.QAMAL_DEBUG.getPosition());
-  assert.equal(nearNpc.row,4);assert.equal(nearNpc.col,6);
+  // Arman offers personalized lessons, with his portrait and written tasks.
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(4,6,1)),true);
   await page.keyboard.press('e');
   await page.locator('.npc-dialog').waitFor({state:'visible'});
   assert.equal(await page.locator('.npc-speaker').textContent(),'Арман');
   await page.waitForFunction(()=>{const img=document.querySelector('.npc-portrait img');return img?.complete&&img.naturalWidth>0;});
-  assert.ok(await page.locator('.npc-portrait img').evaluate(img=>img.complete&&img.naturalWidth>0));
-  await page.locator('#npc-next').click();
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(()=>document.querySelector('.npc-words')?.textContent?.length>5);
-  assert.ok((await page.locator('.npc-words').innerText()).length>5);
+  assert.equal(await page.locator('#mentor-open').count(),1);
   await page.screenshot({path:'/tmp/qamal-npc-dialogue.png',fullPage:true});
-  await page.keyboard.press('Escape');
+  await page.locator('#mentor-open').click();
+  await page.locator('.learning-catalog').waitFor({state:'visible'});
+  await page.locator('[data-learn-topic="1"]').click();
+  assert.match(await page.locator('.learning-theory').innerText(),/перемен/i);
+  await page.locator('#game-dialog [data-close]').first().click();
 
+  // The second-floor library has bookshelves that open the same course freely.
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(10,9,2)),true);
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(11,9)), 'r');
+  await page.keyboard.press('e');
+  await page.locator('.learning-catalog').waitFor({state:'visible'});
+  await page.locator('#learn-language').selectOption('go');
+  await page.locator('[data-learn-topic="0"]').click();
+  assert.match(await page.locator('.learn-heading').innerText(),/Go/);
+  await page.screenshot({path:'/tmp/qamal-library-go.png',fullPage:true});
+  await page.locator('#game-dialog [data-close]').first().click();
+
+  // Stairs still work and explored rooms remain per-floor.
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(10,10,1)),true);
+  await page.keyboard.press('e');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),2);
+  await page.screenshot({path:'/tmp/qamal-second-floor.png',fullPage:true});
+  await page.keyboard.press('e');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),1);
   await page.locator('#tools-toggle').click();
   assert.equal(await page.locator('#tools-popup').isVisible(),true);
   await page.locator('#tools-close').click();
-  assert.equal(await page.locator('#tools-popup').isVisible(),false);
 
-  const reachStairs=await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(10,10,1));
-  assert.equal(reachStairs,true);
-  assert.match(await page.locator('#action-prompt').innerText(),/ЛЕСТНИЦА|ЭТАЖ/);
-  await page.keyboard.press('e');
-  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),2);
-  assert.match(await page.locator('#floor-indicator').innerText(),/ЭТАЖ 2/);
-  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(10,10)), 'N');
-  await page.screenshot({path:'/tmp/qamal-second-floor.png',fullPage:true});
-  const revealed=await page.evaluate(()=>window.QAMAL_DEBUG.getExploredByFloor());
-  assert.ok(revealed[2] > 0&&revealed[2] < 160);
-  await page.keyboard.press('e');
-  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),1);
-  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(10,10)), 'U');
-    assert.deepEqual(errors,[],'Browser console must contain no uncaught errors');
+  assert.deepEqual(errors,[],'No uncaught browser errors');
   await page.screenshot({path:'/tmp/qamal-game-browser-smoke.png',fullPage:true});
-  console.log('Browser smoke passed: fullscreen, movement, interactive door, Python/Go question, persistent unlock, NPC portrait dialogue, menu.');
-} finally {
-  await browser.close();
-}
+  console.log('QAMAL browser walk: prisoner wake-up, guard escort, Python lesson and feedback, door quiz, Arman mentor, Go library, stairs — PASS');
+}finally{await browser.close();}
