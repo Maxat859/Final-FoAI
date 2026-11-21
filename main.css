@@ -173,3 +173,79 @@ button[disabled] {opacity:.42;cursor:not-allowed;}
 .tactic-cell.guard{background:#753f4d;color:#ffd0ba;border-color:#b66b69}
 .tactic-cell.hero{background:#9c7838;color:#fff2b6;border-color:#d4aa61}
 @media(max-width:540px){.tactic-board{padding:7px 3px;gap:1px}.tactic-cell{font-size:11px}}
+
+
+/* V2 IMMERSIVE MODE — WORLD FILLS THE VIEWPORT, NO PERMANENT SIDEBAR */
+html,body,#app{width:100%;height:100%;overflow:hidden}
+.world-screen{position:fixed;inset:0;z-index:3;padding:0!important;width:100vw;height:100dvh;min-height:0!important;background:#030811;overflow:hidden}
+.world-screen #game-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;image-rendering:pixelated;object-fit:fill}
+.world-grain{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 34%,rgba(0,0,0,.24) 100%);z-index:1}
+.world-screen button{font-family:Consolas,'Courier New',monospace;cursor:pointer}
+.world-hud-top{z-index:4;position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:max(14px,env(safe-area-inset-top)) 17px 0;pointer-events:none}
+.hud-game-logo{background:linear-gradient(95deg,rgba(4,14,24,.91),rgba(4,14,24,.54));border-left:4px solid #d8b36b;padding:10px 16px;min-width:170px}
+.hud-game-logo strong{font:900 clamp(18px,2.3vw,29px) Georgia,serif;letter-spacing:.07em;color:#f3d48c;display:block;line-height:1}
+.hud-game-logo strong span{color:#d95d65}
+.hud-game-logo small{font-size:9px;color:#aec1d2;display:block;margin-top:8px;letter-spacing:.09em}
+.hud-pills{display:flex;align-items:center;gap:8px;pointer-events:auto}
+.hud-alert{background:rgba(8,18,30,.91);border:1px solid #506276;padding:8px 12px;min-width:135px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px;color:#d8e2e9;font-size:10px}
+.hud-alert>span{color:#9cabb7}
+.hud-alert strong{font-size:12px;color:#efc67e}
+.hud-alert .stat-bar{width:100%;margin:1px 0 0;height:5px}
+.hud-guard{display:flex;align-items:center;gap:7px;font-size:10px;padding:13px 9px;color:#c6d9df;background:rgba(8,18,30,.89);border:1px solid #506276}
+.hud-icon-btn{color:#f4e3bd;border:1px solid #6b7785;background:rgba(8,18,30,.91);min-width:41px;min-height:42px;font-size:22px}
+.world-toast{position:absolute;z-index:4;top:76px;left:17px;max-width:min(470px,calc(100vw - 34px));padding:10px 15px;background:rgba(8,18,30,.77);color:#d0dde5;border-left:2px solid #b5945e;font-size:12px;line-height:1.5;pointer-events:none}
+.world-action-prompt{position:absolute;z-index:4;left:50%;bottom:124px;transform:translateX(-50%);max-width:calc(100vw - 24px);padding:12px 17px;background:rgba(15,29,41,.88);border:2px solid #d2a95f;color:#f8ddb2;font-weight:800;text-align:center;font-size:clamp(10px,1.4vw,14px);letter-spacing:.035em;box-shadow:0 3px 14px #0008;pointer-events:none}
+.world-hud-bottom{position:absolute;z-index:4;bottom:max(15px,env(safe-area-inset-bottom));left:18px;right:18px;display:flex;justify-content:space-between;align-items:end;gap:14px;pointer-events:none}
+.world-objective{max-width:440px;min-width:220px;padding:11px 16px;background:rgba(6,17,28,.88);border-left:4px solid #d2ac64;color:#f2e2c4}
+.world-objective span{font-size:10px;color:#9db1c2;letter-spacing:.1em}
+.world-objective p{font-size:clamp(12px,1.5vw,16px);font-weight:750;margin:7px 0 1px;line-height:1.35}
+.world-action-buttons{display:flex;align-items:center;gap:8px;pointer-events:auto}
+.world-action-buttons button{border:2px solid #7d94a5;min-height:46px;color:#f4e5bd;font-size:12px;font-weight:800;padding:9px 13px;background:rgba(8,24,36,.94);white-space:nowrap}
+.world-action-buttons .game-action-primary{background:#d8b06c;border-color:#f5d093;color:#0f1e27}
+.game-touch-controls{position:absolute;z-index:4;right:15px;bottom:170px;display:grid;justify-items:center;gap:3px;opacity:.5}
+.game-touch-controls div{display:flex;gap:3px}
+.game-touch-controls button{min-width:43px;min-height:43px;border:2px solid #7794a6;background:rgba(11,30,47,.75);color:#e5d6a8;font-size:17px}
+.game-touch-controls:hover,.game-touch-controls:focus-within{opacity:1}
+.game-tool-drawer{z-index:10;position:absolute;right:12px;top:65px;bottom:12px;overflow-y:auto;width:min(395px,calc(100vw - 24px));padding:19px;background:rgba(9,24,38,.97);border:3px solid #58748a;box-shadow:0 0 40px #000c;color:#d3e0e9}
+.tool-header{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#eec87e}
+.tool-header button{color:#fff;background:#38526b;border:1px solid #6d8ba3;padding:8px 12px}
+.game-tool-drawer p{font-size:12px;line-height:1.7;color:#a9bfca}
+.game-tool-drawer .panel-actions{margin:10px 0 22px}
+.game-tool-drawer .panel-actions button{min-height:43px}
+.tool-bottom{display:flex;justify-content:space-between;color:#8fa9b8;font-size:10px;padding:12px 0;border-top:1px solid #3a5466}
+.game-tool-drawer .exit-btn{width:100%;margin-top:12px}
+.game-tool-drawer .asset-status{margin-top:8px}
+.world-screen #mini-map{display:none!important}
+.world-screen:has(.game-tool-drawer:not([hidden])) .world-action-prompt{opacity:.25}
+/* Modals are part of the game, not a separate page */
+.world-screen~.dialog-backdrop,.dialog-backdrop{z-index:30}
+.dialog-card{width:min(890px,calc(100vw - 24px));border:3px solid #657d92;box-shadow:8px 9px 0 #000;background:linear-gradient(155deg,#162f43,#0c1d2b);max-height:min(90dvh,850px)}
+/* Door challenges */
+.quest-door-title{display:flex;align-items:center;gap:18px;padding:13px 16px;margin:12px 0;background:#162b3e;border:1px solid #42627b}
+.quest-door-title p{margin:6px 0 0;font-size:12px;color:#b2c6d4}
+.lock-symbol{font-size:37px;color:#efbe63}
+.quest-language{display:flex;gap:7px;margin:13px 0 16px}
+.quest-language button{min-width:95px;font-size:12px;font-weight:900!important}
+.quest-language button.selected{background:#d5a963!important;color:#14202c!important;border-color:#f7d48a!important}
+.quest-topline{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:13px 0;color:#8dabbd}
+.difficulty-badge{padding:6px 10px;background:#304b62;color:#fff0c8;font-size:11px}
+.quest-number{font-size:10px;letter-spacing:.11em}
+.quest-code{white-space:pre-wrap;tab-size:4;background:#071620;color:#96dfb5;border:1px solid #446076;padding:18px;line-height:1.6;font:clamp(12px,1.7vw,16px)/1.5 Consolas,monospace;max-height:32dvh;overflow:auto}
+.quest-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.quest-actions button{min-height:46px;padding:12px 15px!important;font-weight:800}
+.quest-label{margin:12px 0 6px}
+.quest-unlocked{font-size:clamp(19px,4vw,32px);padding:22px;border:2px solid #4caf8b;color:#9df0c6;text-align:center;margin:16px 0;background:#153b35}
+.dialog-backdrop.npc-open{display:flex;align-items:flex-end;justify-content:center;padding:0 16px max(14px,env(safe-area-inset-bottom));background:rgba(0,0,0,.35)}
+.dialog-backdrop.npc-open .dialog-card{width:min(980px,100%);max-height:48dvh;min-height:190px;box-shadow:0 15px 45px #000c;padding:0;background:linear-gradient(110deg,rgba(9,25,39,.98),rgba(20,45,58,.98));border:3px solid #d9b777}
+.npc-dialog{display:flex;gap:20px;padding:18px;align-items:center}
+.npc-portrait{position:relative;flex:0 0 clamp(100px,14vw,150px);width:clamp(100px,14vw,150px);height:clamp(110px,16vw,160px);background:#28485b;border:3px solid #bfa16f;overflow:hidden;box-shadow:inset 0 0 15px #0007}
+.npc-portrait img{position:absolute;image-rendering:pixelated;width:250px;height:250px;max-width:none;left:50%;top:-24px;transform:translateX(-50%)}
+.portrait-erasyl{background:#5c4837}.portrait-arman{background:#3d5874}.portrait-ruslan{background:#544c68}.portrait-guard{background:#6b3e47}
+.npc-dialog-content{flex:1;min-width:0}
+.npc-speaker{font-size:clamp(15px,2.4vw,22px);color:#f4ca7d;font-weight:900;letter-spacing:.06em;border-bottom:1px solid #47667a;padding-bottom:8px}
+.npc-words{font-size:clamp(14px,2vw,20px);color:#e8f1f7;line-height:1.55;min-height:68px;margin-top:11px}
+.npc-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.npc-footer span{font-size:10px;color:#98b3c6}
+.npc-footer button{background:#d1aa69!important;color:#131f2b!important;font-weight:900;padding:12px 20px!important;white-space:nowrap}
+@media(max-width:850px){.hud-guard{display:none}.world-action-prompt{bottom:136px}.game-touch-controls{bottom:155px}}
+@media(max-width:620px){.world-hud-top{padding:10px 9px 0}.hud-game-logo{min-width:100px;padding:9px}.hud-game-logo small{font-size:8px}.hud-alert{min-width:91px;padding:7px}.hud-pills{gap:4px}.hud-icon-btn{min-width:36px;min-height:39px}.world-toast{top:69px;left:8px;font-size:10px;max-width:80vw}.world-hud-bottom{left:8px;right:8px;bottom:8px;flex-wrap:wrap;gap:8px}.world-objective{flex:1 1 100%;padding:8px 10px}.world-action-buttons{width:100%}.world-action-buttons button{flex:1;padding:10px 4px;font-size:10px;min-height:42px}.world-action-prompt{bottom:145px;font-size:10px;padding:8px 10px}.game-touch-controls{right:8px;bottom:204px}.game-touch-controls button{min-width:34px;min-height:34px}.npc-dialog{gap:9px;padding:10px}.npc-portrait{flex-basis:83px;width:83px;height:104px}.npc-words{min-height:58px;font-size:13px}.npc-footer span{font-size:8px}.npc-footer button{font-size:9px;padding:7px!important}.dialog-backdrop.npc-open .dialog-card{min-height:140px;max-height:48dvh}.quest-code{padding:10px;max-height:25dvh}.dialog-card{padding:16px}}
