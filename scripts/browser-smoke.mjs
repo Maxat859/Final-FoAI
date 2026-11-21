@@ -48,6 +48,7 @@ try {
   assert.ok(await page.locator('.npc-portrait img').evaluate(img=>img.complete&&img.naturalWidth>0));
   await page.locator('#npc-next').click();
   await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.querySelector('.npc-words')?.textContent?.length>5);
   assert.ok((await page.locator('.npc-words').innerText()).length>5);
   await page.keyboard.press('Escape');
 
