@@ -149,7 +149,7 @@ async function init(){
       const fallback='assets/characters/prisoners/prisoner.png';
       return './'+(assets.manifest?.sprites?.[key]||fallback);
     },
-    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world,
+    seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>tile==='D'&&!unlockedDoors.has(doorId(r,c))?'#':tile)),
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
       'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18}
@@ -204,11 +204,14 @@ async function init(){
   document.addEventListener('keydown',event=>{
     if($('game-screen').hidden)return;
     if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else if(!$('tools-popup').hidden){$('tools-popup').hidden=true;}else{show($('main-menu'));}return;}
-    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea,button'))return;
     if(panels.isOpen()){
-      if(event.code==='KeyE'||event.code==='Enter'){if(panels.advanceNpc?.())event.preventDefault();}
+      if(event.code==='KeyE'||event.code==='Enter'){
+        if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
+        if(panels.advanceNpc?.())event.preventDefault();
+      }
       return;
     }
+    if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea,button'))return;
     if(!$('tools-popup').hidden)return;
     if(event.code==='KeyE'){event.preventDefault();interact();return;}
     if(event.code==='KeyM'){event.preventDefault();void panels.open('map');return;}
