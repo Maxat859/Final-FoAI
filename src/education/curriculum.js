@@ -6,7 +6,7 @@
 const task=(prompt,codeSnippet,answer,explanation,steps,other=[])=>({
   type:'short_text',mode:'complete',prompt,codeSnippet,
   expectedAnswer:String(answer),acceptedAnswers:[String(answer),...other.map(String)],
-  explanation,steps,hint:steps[0]
+  explanation,steps:steps.length>=3?steps:[...steps,explanation],hint:steps[0]
 });
 const topic=(id,title,short,lesson,example,examples)=>({id,title,short,lesson,example,tasks:examples});
 const python=[
