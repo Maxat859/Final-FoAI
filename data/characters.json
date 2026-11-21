@@ -1,0 +1,24 @@
+{
+  "main": [
+    {"displayName": "Ерасыл", "portraitAssetId": "portrait.erasyl"},
+    {"displayName": "Арман", "portraitAssetId": "portrait.default"},
+    {"displayName": "Руслан", "portraitAssetId": "portrait.default"},
+    {"displayName": "Данияр", "portraitAssetId": "portrait.default"},
+    {"displayName": "Самат", "portraitAssetId": "portrait.default"},
+    {"displayName": "Мирас", "portraitAssetId": "portrait.default"}
+  ],
+  "supporting": [
+    {"displayName": "Асылбек"}, {"displayName": "Батыр"},
+    {"displayName": "Ермек"}, {"displayName": "Серик"},
+    {"displayName": "Азамат"}, {"displayName": "Ислам"},
+    {"displayName": "Кайрат"}, {"displayName": "Аман"},
+    {"displayName": "Талгат"}, {"displayName": "Даулет"},
+    {"displayName": "Рауан"}, {"displayName": "Алишер"},
+    {"displayName": "Бекарыс"}, {"displayName": "Ерлан"},
+    {"displayName": "Жасулан"}, {"displayName": "Мурат"},
+    {"displayName": "Нурбол"}, {"displayName": "Олжас"},
+    {"displayName": "Ринат"}, {"displayName": "Санжар"},
+    {"displayName": "Тимур"}, {"displayName": "Улан"},
+    {"displayName": "Шынгыс"}, {"displayName": "Эльдар"}
+  ]
+}

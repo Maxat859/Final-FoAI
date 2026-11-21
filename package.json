@@ -1,0 +1,11 @@
+{
+  "name": "qamal-prison-break",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "demo:p2": "node scripts/demo-participant2.js"
+  },
+  "description": "QAMAL: PRISON BREAK - участник 2 (CSP, Education, ML)"
+}

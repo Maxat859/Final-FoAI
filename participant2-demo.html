@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>QAMAL • Participant 2 AI Lab</title>
+  <link rel="stylesheet" href="./participant2-demo.css">
+  <script type="module" src="./participant2-demo.js"></script>
+</head>
+<body>
+  <header class="top"><span class="brand">QAMAL<span class="brand-dot">.</span></span><span class="tag">AI EDUCATIONAL GAME · УЧАСТНИК №2</span></header>
+  <main>
+    <div class="hero"><p class="eyebrow">МОДУЛИ CSP · EDUCATION · PRISONERS · DECISION TREE</p><h1>Проверка алгоритмов <span>без ZIP</span></h1><p>Это отдельная интерактивная демонстрация части №2, а не полная игра. Все алгоритмы работают в браузере через JavaScript-модули.</p></div>
+    <div id="startup-error" class="error" role="alert" hidden></div>
+    <section class="grid">
+      <article class="panel" id="csp">
+        <div class="panel-head"><span class="num">01</span><div><h2>CSP / Backtracking</h2><p>Логический замок: A, B и C от 1 до 4; цифры разные, B=2, A&lt;C, сумма=7.</p></div></div>
+        <div class="lock-fields"><label>A <input id="digit-a" type="number" min="1" max="4" value="1"></label><label>B <input id="digit-b" type="number" min="1" max="4" value="2"></label><label>C <input id="digit-c" type="number" min="1" max="4" value="4"></label></div>
+        <div class="actions"><button id="check-lock">Проверить замок</button><button id="solve-lock" class="secondary">Найти решение CSP</button></div>
+        <div id="lock-result" class="result" role="status" aria-live="polite">Комбинация ещё не проверена.</div>
+      </article>
+      <article class="panel" id="education">
+        <div class="panel-head"><span class="num">02</span><div><h2>Задачи Python / Go</h2><p>Выбери язык и проверь ответ. Код Python/Go здесь не выполняется.</p></div></div>
+        <div class="field"><label for="language">Язык</label><select id="language"><option value="python">Python</option><option value="go">Go</option></select></div>
+        <div class="field"><label for="question">Вопрос</label><select id="question"></select></div>
+        <p class="question-prompt" id="question-prompt"></p><div id="answer-area" class="options"></div>
+        <div class="actions"><button id="check-answer">Проверить ответ</button><button id="next-question" class="secondary">Следующий вопрос</button></div>
+        <div id="answer-result" class="result" role="status" aria-live="polite">Выбери ответ.</div>
+      </article>
+      <article class="panel" id="prisoners">
+        <div class="panel-head"><span class="num">03</span><div><h2>1 000 игровых досье</h2><p>6 сюжетных, 24 второстепенных и 970 фоновых записей; одинаковый seed — одинаковые данные.</p></div></div>
+        <div class="statline"><div><strong id="prisoner-count">—</strong><small>Досье</small></div><div><strong id="prisoner-unique">—</strong><small>Уникальные ID</small></div></div>
+        <div class="field"><label for="prisoner-search">Поиск по ID или имени</label><input type="search" id="prisoner-search" placeholder="Q-01001 или Ерасыл" autocomplete="off"></div>
+        <div id="prisoner-results" class="records"></div><p class="fine">Показаны первые 8 совпадений, чтобы список не тормозил.</p>
+      </article>
+      <article class="panel" id="ml">
+        <div class="panel-head"><span class="num">04</span><div><h2>Decision Tree</h2><p>Учебная модель классифицирует только вымышленные игровые события: LOW / MEDIUM / HIGH.</p></div></div>
+        <div class="actions"><button id="train-model">Generate + Train + Test</button></div>
+        <div id="ml-status" class="result" role="status" aria-live="polite">Модель ещё не обучена.</div>
+        <div class="metrics" id="metrics" hidden><div><strong id="metric-train">—</strong><small>Train</small></div><div><strong id="metric-test">—</strong><small>Test</small></div><div><strong id="metric-accuracy">—</strong><small>Accuracy</small></div><div><strong id="metric-f1">—</strong><small>F1 macro</small></div></div>
+        <h3>Введи признаки игровых событий</h3><div class="features"><label>Warnings<input id="warnings" type="number" min="0" max="1000" value="2"></label><label>Restricted visits<input id="visits" type="number" min="0" max="1000" value="1"></label><label>Rule violations<input id="violations" type="number" min="0" max="1000" value="1"></label><label>Alert level<input id="alert" type="number" min="0" max="100" value="45"></label></div>
+        <button id="predict" class="secondary" disabled>Predict</button><div id="predict-result" class="result" role="status" aria-live="polite">Сначала обучи модель.</div>
+      </article>
+    </section>
+    <footer>QAMAL: PRISON BREAK · Отдельная демонстрация участника №2 · Синтетические данные, не оценка реальных людей.</footer>
+  </main>
+</body>
+</html>
