@@ -34,7 +34,7 @@ export function createLiveWorld() {
     tick:0,
     status:"playing",
     alarm:createAlarm(0),
-    guards:INITIAL_GUARDS.map(config=>createGuard(config)),
+    guards:INITIAL_GUARDS.map(config=>({...createGuard(config),floor:config.floor})), 
     events:[]
   };
 }
