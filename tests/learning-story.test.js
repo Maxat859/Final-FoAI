@@ -101,3 +101,12 @@ test('Panels expose classroom, library, mentor and persistent mistake review',()
   assert.match(ui,/learning-journal/);
   assert.match(ui,/learn-explain/);
 });
+
+test('New game button confirms save reset while retaining learning language',()=>{
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.match(html,/id="new-game-btn"/);
+  assert.match(main,/window\.confirm\(/);
+  assert.match(main,/storage\.set\('progress',null\)/);
+  assert.doesNotMatch(main,/storage\.set\('language',null\)/);
+});
