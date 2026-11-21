@@ -1,82 +1,11 @@
-
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>QAMAL: Prison Break</title>
-
-    <link rel="stylesheet" href="./styles/main.css">
-</head>
-
-<body>
-
-    <main id="app">
-
-        <!-- Главное меню -->
-        <section id="main-menu" class="screen">
-
-            <div class="menu-content">
-
-                <h1 class="game-title">QAMAL</h1>
-
-                <h2 class="game-subtitle">PRISON BREAK</h2>
-
-                <p class="game-description">
-                    Every line of code is a step towards freedom.
-                </p>
-
-                <div class="menu-buttons">
-
-                    <button id="play-btn" class="game-btn">
-                        НАЧАТЬ ИГРУ
-                    </button>
-
-                    <button id="settings-btn" class="game-btn">
-                        НАСТРОЙКИ
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- Настройки -->
-        <section id="settings-screen" class="screen" hidden>
-
-            <h2>НАСТРОЙКИ</h2>
-
-            <label for="language-select">
-                Язык программирования:
-            </label>
-
-            <select id="language-select">
-                <option value="python">Python</option>
-                <option value="go">Golang</option>
-            </select>
-
-            <button id="back-btn" class="game-btn">
-                НАЗАД
-            </button>
-
-        </section>
-
-        <!-- Игровой экран -->
-        <section id="game-screen" class="screen" hidden>
-
-            <canvas id="game-canvas"></canvas>
-
-            <button id="exit-btn" class="game-btn">
-                ВЫЙТИ В МЕНЮ
-            </button>
-
-        </section>
-
-    </main>
-
-    <script type="module" src="./src/main.js"></script>
-
-</body>
-</html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b1119"><title>QAMAL: Prison Break — AI Educational Game</title><link rel="stylesheet" href="./main.css"></head>
+<body><main id="app">
+<section id="main-menu" class="screen menu-screen"><div class="menu-decoration"><span>QAMAL / 01</span><span>2026 · QAIRU FINAL</span></div><div class="menu-card"><div class="menu-eyebrow">AI EDUCATIONAL GAME · PIXEL ART EDITION</div><div class="logo">QAMAL<span class="logo-dot">.</span></div><h1>PRISON BREAK</h1><div class="menu-divider"></div><p class="tagline">Every line of code is a step towards freedom.</p><div class="menu-actions"><button id="play-btn" class="primary-btn">▶ НАЧАТЬ ИГРУ / ПРОДОЛЖИТЬ</button><button id="settings-btn" class="secondary-btn">⚙ НАСТРОЙКИ</button></div><p class="menu-tip">ГЛАВА 1 · ИГРОВОЙ ОБРАЗОВАТЕЛЬНЫЙ ПРОТОТИП</p></div><div class="menu-bottom">BUILD 0.4 · QAMAL-01 <span>ART & FRONTEND: PARTICIPANT #4</span></div></section>
+<section id="settings-screen" class="screen settings-screen" hidden><div class="settings-card"><div class="section-kicker">QAMAL // SETTINGS</div><h2>НАСТРОЙКИ</h2><label for="language-select">ЯЗЫК УЧЕБНЫХ ЗАДАНИЙ</label><select id="language-select"><option value="python">Python</option><option value="go">Go</option></select><p>Выбор сохраняется в браузере. Игра работает без регистрации и сервера.</p><button id="back-btn" class="secondary-btn">← В МЕНЮ</button></div></section>
+<section id="game-screen" class="screen game-screen" hidden><header class="game-header"><div class="game-brand"><strong>QAMAL</strong><span>PRISON BREAK / QAMAL-01</span></div><div class="game-header-right"><span class="status-indicator"></span> AI EDUCATIONAL GAME / PIXEL ART</div></header>
+<div class="game-layout"><div class="map-column"><div class="map-toolbar"><span id="zone-name">КОРИДОР</span><span id="map-size-label">30 × 20 КЛЕТОК</span></div><div class="canvas-frame"><canvas id="game-canvas" width="960" height="640" aria-label="Пиксельная игровая карта тюрьмы"></canvas></div><div class="control-bar"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> — ХОДЬБА · <kbd>E</kbd> — ДЕЙСТВИЕ · <kbd>M</kbd> — КАРТА</span><span><kbd>Esc</kbd> — МЕНЮ</span></div></div>
+<aside class="game-sidebar"><div class="side-heading"><span>01</span> ЕРАСЫЛ / ПЕРСОНАЖ</div><div class="profile-box"><div class="profile-icon">E</div><div><strong>ЕРАСЫЛ</strong><small id="pos-label">R:10 C:4</small></div></div><div class="stat-row"><span>ТРЕВОГА</span><b id="alert-value">0 / 100</b></div><div class="stat-bar"><span id="alert-fill" class="stat-fill alert"></span></div><div class="live-guard-status"><span class="led-dot"></span> ОХРАНА: <strong id="guard-state">ПАТРУЛЬ</strong></div><div class="side-heading lower"><span>02</span> МИССИЯ <span id="mission-progress">0 / 5</span></div><p class="objective" id="objective">Пройти задание Python или Go</p><div class="side-heading lower"><span>03</span> МИНИ-КАРТА</div><div class="mini-frame"><canvas id="mini-map" width="240" height="160" aria-label="Исследованная карта"></canvas></div><p class="mini-caption">Жёлтая точка — игрок. Неизвестные клетки скрыты.</p><div class="side-heading lower"><span>04</span> ИГРОВЫЕ ЭКРАНЫ</div><div id="panel-actions" class="panel-actions"><button data-panel="intro">▣ СЮЖЕТ / ГЛАВА 01</button><button data-panel="code">⌘ PYTHON / GO</button><button data-panel="planner">⌁ ПОИСК ПУТИ</button><button data-panel="lock">▣ CSP-ЗАМОК</button><button data-panel="tactical">♜ MINIMAX</button><button data-panel="bayes">∑ BAYES</button><button data-panel="cctv">◉ CCTV</button><button data-panel="dossiers">▤ 1000 ДОСЬЕ</button><button data-panel="lab">△ AI TRAINING</button><button data-panel="help">? ПОМОЩЬ</button></div><div class="side-heading lower"><span>05</span> СИСТЕМА</div><div id="game-message" class="message-box" role="status">Загрузка...</div><div class="live-events" id="live-events" aria-live="polite">СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ</div><div id="asset-status" class="asset-status">Загрузка Pixel Art...</div><button id="exit-btn" class="secondary-btn exit-btn">← ВЫЙТИ В МЕНЮ</button></aside></div>
+<footer class="game-footer">QAMAL-01 · СИНТЕТИЧЕСКАЯ ИГРОВАЯ СИМУЛЯЦИЯ <span>PARTICIPANT 4 · FRONTEND / BAYES / ART</span></footer></section>
+<div id="game-dialog" class="dialog-backdrop" hidden role="dialog" aria-modal="true" aria-label="Игровое окно"><div class="dialog-card"><div id="dialog-inner"></div></div></div>
+</main><script type="module" src="./src/main.js"></script></body></html>

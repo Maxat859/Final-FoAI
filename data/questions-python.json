@@ -1,0 +1,66 @@
+{
+  "language": "python",
+  "version": "2.0",
+  "questions": [
+    {
+      "id": "py-01",
+      "mode": "read",
+      "difficulty": "easy",
+      "title": "Чтение кода: индексация списка маршрута",
+      "prompt": "Что выведет программа?",
+      "codeSnippet": "path = ['cell_A', 'corridor', 'security', 'exit']\nprint(path[-2])",
+      "expectedAnswer": "security",
+      "acceptedAnswers": [
+        "security",
+        "'security'",
+        "\"security\""
+      ],
+      "hint": "Отрицательный индекс -1 указывает на последний элемент, а -2 — на предпоследний.",
+      "explanation": "Предпоследний элемент списка path — строка 'security'."
+    },
+    {
+      "id": "py-02",
+      "mode": "complete",
+      "difficulty": "easy",
+      "title": "Дополнение кода: фильтрация камер",
+      "prompt": "Какое ключевое слово нужно вставить, чтобы проверить наличие элемента в списке?",
+      "codeSnippet": "active_cams = ['CAM-01', 'CAM-03']\nif 'CAM-01' ___ active_cams:\n    print('detected')",
+      "expectedAnswer": "in",
+      "acceptedAnswers": [
+        "in"
+      ],
+      "hint": "В Python для проверки принадлежности элемента списку используется оператор из двух букв.",
+      "explanation": "Оператор in возвращает True, если 'CAM-01' присутствует в списке active_cams."
+    },
+    {
+      "id": "py-03",
+      "mode": "fix",
+      "difficulty": "medium",
+      "title": "Исправление кода: добавление узла в очередь BFS",
+      "prompt": "В коде допущена ошибка в названии метода добавления элемента в конец списка. Напишите правильное имя метода.",
+      "codeSnippet": "queue = [(0, 0)]\nqueue.push((0, 1))",
+      "expectedAnswer": "append",
+      "acceptedAnswers": [
+        "append",
+        "queue.append((0, 1))",
+        ".append"
+      ],
+      "hint": "У списков в Python нет метода push; для добавления в конец используется другой метод.",
+      "explanation": "Метод append() добавляет один элемент в конец списка в Python."
+    },
+    {
+      "id": "py-04",
+      "mode": "read",
+      "difficulty": "hard",
+      "title": "Чтение кода: подсчёт нарушений в цикле",
+      "prompt": "Какое число выведет программа?",
+      "codeSnippet": "events = [1, 0, 2, 0, 3]\ncount = 0\nfor e in events:\n    if e > 0:\n        count += 1\nprint(count)",
+      "expectedAnswer": "3",
+      "acceptedAnswers": [
+        "3"
+      ],
+      "hint": "Посчитайте, сколько элементов в списке строго больше 0.",
+      "explanation": "Условие e > 0 выполняется для значений 1, 2 и 3 — всего 3 раза."
+    }
+  ]
+}
