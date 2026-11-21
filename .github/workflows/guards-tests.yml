@@ -1,0 +1,24 @@
+name: QAMAL Guard AI Tests
+on:
+  push:
+    branches: [feature/minimax-guards]
+  pull_request:
+    paths:
+      - "src/algorithms/minimax.js"
+      - "src/game/guards.js"
+      - "src/game/alarm.js"
+      - "src/game/tacticalEncounter.js"
+      - "src/surveillance/**"
+      - "tests/guards.test.js"
+      - "package.json"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm test
