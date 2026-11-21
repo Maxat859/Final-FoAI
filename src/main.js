@@ -156,21 +156,35 @@ async function init(){
   show($('main-menu'));
   const previous=await storage.get('progress',null);
   if(previous){
+    const validCells=values=>Array.isArray(values)
+      ?values.filter(x=>typeof x==='string'&&/^\d+,\d+$/.test(x)): [];
+    const validDoors=values=>Array.isArray(values)
+      ?values.filter(x=>typeof x==='string'&&/^\d+:\d+$/.test(x)): [];
+    if(previous.mapVersion===3){
+      for(const f of FLOORS){
+        seenByFloor[f]=new Set(validCells(previous.seenByFloor?.[f]));
+        unlockedByFloor[f]=new Set(validDoors(previous.unlockedByFloor?.[f]));
+      }
+      floor=FLOORS.includes(previous.floor)?previous.floor:1;
+    }else if(previous.mapVersion===2){
+      seenByFloor[1]=new Set(validCells(previous.seen));
+      unlockedByFloor[1]=new Set(validDoors(previous.unlockedDoors));
+    }
+    activateFloor(floor);
     if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col)
        &&isPassable(world,previous.player.row,previous.player.col)){
       player={...START_POSITION,...previous.player};
     }
-    // Old saves used a small map and a different discovery algorithm.
-    // Start the new world with genuine line-of-sight, not its obsolete explored cells.
-    if(previous.mapVersion===2 && Array.isArray(previous.seen))
-      seen=new Set(previous.seen.filter(x=>typeof x==='string'&&/^\d+,\d+$/.test(x)));
     mission={...DEFAULT_MISSION,...previous.mission};
-    if(Array.isArray(previous.unlockedDoors))unlockedDoors=new Set(previous.unlockedDoors.filter(x=>/^\d+:\d+$/.test(x)));
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
     live=restoreLiveWorld(previous.live);
     live={...live,alarm:changeAlarm(live.alarm,alarm-live.alarm.value)};
-    introSeen=Boolean(previous.introSeen);
-    if(mission.lockOpen){world[11][14]='D';unlockedDoors.add(doorId(11,14));}
+    // Show the new wake-up scene once to players migrating old saves too.
+    introSeen=Boolean(previous.introSeen&&previous.mapVersion===3);
+    if(mission.lockOpen){
+      worlds[1][11][14]='D';
+      unlockedByFloor[1].add(doorId(11,14));
+    }
   }
   updateVision();
   syncGuards();
@@ -195,7 +209,8 @@ async function init(){
     seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>tile==='D'&&!unlockedDoors.has(doorId(r,c))?'#':tile)),
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
-      'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18}
+      'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18},
+      'CAM-04':{row:5,col:35},'CAM-05':{row:19,col:44}
     }[cam]),
     drawMap:target=>{
       const context=target.getContext('2d'),cellW=target.width/COLS,cellH=target.height/ROWS;
@@ -218,8 +233,8 @@ async function init(){
   });
   $('play-btn').addEventListener('click',()=>{
     show($('game-screen'));$('tools-popup').hidden=true;renderer.resize();render();
-    message('Глава 1: QAMAL-01. Исследуй помещения, поговори с Арманом, пройди контрольные точки.');
-    if(!introSeen){introSeen=true;void panels.open('intro');void persist();}
+    message('Этаж '+floor+'. Выходи из камеры, изучай тюрьму и находи лестницы U / N.');
+    if(!introSeen){introSeen=true;void panels.open('wake');void persist();}
   });
   $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
@@ -261,7 +276,7 @@ async function init(){
     const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
   });
   render();
-  message('Подходи к дверям со звёздами: 1 — лёгкая, 2 — средняя, 3 — сложная. E — открыть задание.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors]};
+  message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
