@@ -48,7 +48,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     ctx.strokeRect(x+.5,y+.5,TILE,TILE);
   }
   function drawEntity(entity,camera,highlight=false){
-    const x=(entity.col-camera.col)*TILE,y=(entity.row-camera.row)*TILE;
+    const x=(entity.col-camera.col)*TILE,y=(entity.row-camera.row)*TILE+(highlight&&entity.steps%2!==0?-1:0);
     if(x < -TILE||y < -TILE||x >= canvas.width||y >= canvas.height)return;
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+8,y+27,17,3);
     sprite(entity.spriteId||ASSET_IDS.player,x,y);
@@ -57,7 +57,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
     }
   }
-  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={}}){
+  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},doors=[],doorProgress={}}){
     const camera=getCameraOffset(player,world);
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle='#050a12';ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -75,6 +75,20 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       }
     }
 
+    // Every educational door has a visible difficulty tag and completion state.
+    for(const door of doors){
+      if(!visible.has(door.row+','+door.col))continue;
+      const x=(door.col-camera.col)*TILE,y=(door.row-camera.row)*TILE;
+      if(x<0||y<0||x>=canvas.width||y>=canvas.height)continue;
+      const finished=(doorProgress[door.id]??0)>=door.required;
+      const tint=finished?'#71d4a0':door.difficulty==='easy'?'#72d5ae':
+        door.difficulty==='medium'?'#ffd66b':'#ff7f87';
+      ctx.fillStyle='rgba(7,12,20,.8)';ctx.fillRect(x+3,y+3,TILE-6,11);
+      ctx.fillStyle=tint;ctx.fillRect(x+4,y+4,TILE-8,9);
+      ctx.fillStyle='#08131b';ctx.font='bold 8px monospace';
+      ctx.fillText(finished?'OK':door.difficulty==='easy'?'1':door.difficulty==='medium'?'2':'3',x+12,y+12);
+      if(!finished){ctx.strokeStyle=tint;ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);}
+    }
     // Objective indicators only appear once the object is actually in sight.
     for(const target of TARGETS){
       const key=target.row+','+target.col;

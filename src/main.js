@@ -13,6 +13,7 @@ import {createDossierUI} from './ui/dossierUI.js';
 import {createTrainingLabUI} from './ui/trainingLabUI.js';
 import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities} from './game/liveWorld.js';
 import {changeAlarm} from './game/alarm.js';
+import {createDoorQuests,DOOR_DIFFICULTIES} from './game/doorQuests.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
@@ -20,6 +21,7 @@ const canvas=$('game-canvas'),mini=$('mini-map');
 const assets={images:new Map(),manifest:null};
 const renderer=createRenderer(canvas,mini,assets);
 const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
+let doorQuests=createDoorQuests(world);
 const storage=createStorage();
 let player={...START_POSITION},seen=new Set(),visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
 let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
@@ -30,7 +32,7 @@ function updateVision(){
   for(const tile of visible)seen.add(tile);
 }
 function render(){
-  renderer.frame({world,player,entities,seen,visible,route,alarm,mission});
+  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,doors:doorQuests.doors,doorProgress:doorQuests.snapshot()});
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
@@ -41,8 +43,10 @@ function render(){
   const logEl=$('live-events');if(logEl)logEl.textContent=live.events.slice(-2).map(e=>`${e.source}: ${e.description}`).join(' · ') || 'СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ';
   $('objective').textContent=objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
+  if($('door-progress'))$('door-progress').textContent=doorQuests.completed()+'/'+doorQuests.doors.length;
+  updateInteractionPrompt();
 }
-async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen});}
+async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen,doorProgress:doorQuests.snapshot()});}
 function mark(key){
   mission=markMission(mission,key);
   if(key==='lockOpen'){world[11][14]='D';updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
@@ -62,19 +66,35 @@ function raiseAlarm(value){
   render();void persist();
 }
 function updateAssets(msg){$('asset-status').textContent=msg;}
+function updateInteractionPrompt(){
+  const button=$('interact-btn'),hint=$('interaction-hint');
+  if(!button||!hint)return;
+  const door=doorQuests.nearest(player),other=nearestInteraction(player,world,entities);
+  const label=door?'E — ЗАДАНИЕ НА ДВЕРИ ('+DOOR_DIFFICULTIES[door.difficulty].label+')':
+    other?.kind==='npc'?'E — ПОГОВОРИТЬ: '+other.name:
+    other?'E — '+other.name.toUpperCase():
+    'WASD / СТРЕЛКИ — ИДТИ • E — ВЗАИМОДЕЙСТВИЕ';
+  hint.textContent=label;
+  button.textContent=door?'E  ОТКРЫТЬ ЗАДАНИЕ':other?'E  ВЗАИМОДЕЙСТВИЕ':'E  ДЕЙСТВИЕ';
+  button.disabled=!(door||other);
+}
 function interact(){
+  const door=doorQuests.nearest(player);
+  if(door){void panels.open('door',{door});return;}
   const target=nearestInteraction(player,world,entities);
   if(!target){message('Рядом нет объекта. Исследуй карту или используй меню справа.');return;}
-  if(target.kind==='npc'){
-    if(target.id==='arman')message('АРМАН: «Ерасыл, у каждой двери своё правило. Начни с программирования. Потом изучи карту — и найди доказательства в архиве».');
-    else if(target.id==='ruslan')message('РУСЛАН: «Я видел несоответствия в досье. Камеры могут показать больше, чем ты думаешь».');
-    else message(target.name+': «Здесь за каждым шагом наблюдают виртуальные датчики. Будь внимателен».');
-    return;
-  }
+  if(target.kind==='npc'){void panels.open('npc',{npc:target});return;}
   const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
   panels.open(mapping[target.kind]);
 }
-function move(direction){const outcome=attemptMove(player,direction,world,entities);
+function move(direction){
+  const row=player.row+direction[0],col=player.col+direction[1];
+  if(doorQuests.isLocked(row,col)){
+    void panels.open('door',{door:doorQuests.find(row,col)});
+    message('Дверь закрыта. Реши задание Python или Go, чтобы пройти.');
+    return;
+  }
+  const outcome=attemptMove(player,direction,world,entities);
   if(!outcome.moved){message(outcome.reason);return;}
   player=outcome.player;
   updateVision();
@@ -92,6 +112,7 @@ function move(direction){const outcome=attemptMove(player,direction,world,entiti
 async function init(){
   show($('main-menu'));
   const previous=await storage.get('progress',null);
+  doorQuests=createDoorQuests(world,previous?.doorProgress);
   if(previous){
     if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col)
        &&isPassable(world,previous.player.row,previous.player.col)){
@@ -122,6 +143,14 @@ async function init(){
   panels=createPanels($('game-dialog'),{
     dossiers:dossierUI,lab:labUI,
     language:()=>$('language-select').value,mark,raiseAlarm,
+    doorProgress:door=>doorQuests.steps(door),
+    getDoorQuestion:(door,language,bank)=>doorQuests.question(door,language,bank),
+    completeDoorStep:door=>{
+      const result=doorQuests.award(door);
+      if(!mission.learned)mark('learned');
+      if(result.unlocked)message('Дверь '+door.id+' открыта! Теперь можешь пройти.');
+      render();void persist();return result;
+    },
     seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world,
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
@@ -155,6 +184,8 @@ async function init(){
   $('exit-btn').addEventListener('click',()=>show($('main-menu')));
   $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
   const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
+  $('interact-btn')?.addEventListener('click',()=>interact());
+  $('fullscreen-btn')?.addEventListener('click',()=>{if(!document.fullscreenElement)void document.documentElement.requestFullscreen?.();else void document.exitFullscreen?.();});
   $('panel-actions').addEventListener('click',event=>{
     const button=event.target.closest('[data-panel]');if(button)void panels.open(button.dataset.panel);
   });
@@ -169,6 +200,6 @@ async function init(){
   });
   render();
   message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getDoorCount:()=>doorQuests.doors.length,getDoorsUnlocked:()=>doorQuests.completed()};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
