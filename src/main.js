@@ -1,6 +1,6 @@
 /* QAMAL: PRISON BREAK — Participant #4 frontend, Pixel Art + Bayes + dossier UI.
    Search/CSP/Minimax/DecisionTree are separate participant modules and never silently faked. */
-import {ASSET_IDS,COLS,DEFAULT_ENTITIES,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS,createLevel,zoneAt,isPassable} from './config.js';
+import {ASSET_IDS,COLS,DEFAULT_ENTITIES,FLOORS,STAIR_LINKS,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS,createLevel,zoneAt,isPassable} from './config.js';
 import {START_POSITION,DIRECTIONS,computeFieldOfView,attemptMove,nearestInteraction} from './game/player.js';
 import {getCameraOffset} from './game/camera.js';
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
@@ -20,10 +20,14 @@ const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
 const canvas=$('game-canvas'),mini=$('mini-map');
 const assets={images:new Map(),manifest:null};
 const renderer=createRenderer(canvas,mini,assets);
-const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
+const worlds={1:createLevel(1),2:createLevel(2)};
+const entitiesByFloor=Object.fromEntries(FLOORS.map(f=>[f,DEFAULT_ENTITIES.filter(e=>(e.floor||1)===f).map(e=>({...e}))]));
+let floor=1,world=worlds[1],entities=entitiesByFloor[1];
 const storage=createStorage();
-let player={...START_POSITION},seen=new Set(),visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
-let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false,unlockedDoors=new Set();
+const seenByFloor={1:new Set(),2:new Set()},unlockedByFloor={1:new Set(),2:new Set()};
+let player={...START_POSITION},seen=seenByFloor[1],visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
+let unlockedDoors=unlockedByFloor[1];
+let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
 function updateVision(){
@@ -31,9 +35,10 @@ function updateVision(){
   for(const tile of visible)seen.add(tile);
 }
 function render(){
-  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors]});
+  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor});
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
-  $('zone-name').textContent=zoneAt(player.row,player.col);
+  $('zone-name').textContent=zoneAt(player.row,player.col,floor);
+  const indicator=$('floor-indicator');if(indicator)indicator.textContent='ЭТАЖ '+floor+' / 2';
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
   $('alert-value').textContent=`${alarm} / 100`;
   $('alert-fill').style.width=`${alarm}%`;
@@ -44,18 +49,27 @@ function render(){
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
   const hint=$('action-prompt');
   if(hint){
+    const stair=stairAtPlayer();
     const door=adjacentDoor(world,player,unlockedDoors);
     const target=nearestInteraction(player,world,entities);
-    hint.textContent=door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
+    hint.textContent=stair?'E — '+(floor===1?'ПОДНЯТЬСЯ НА 2 ЭТАЖ':'СПУСТИТЬСЯ НА 1 ЭТАЖ')+' · ЛЕСТНИЦА':
+      door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
       target?.kind==='npc'?'E — ПОГОВОРИТЬ С '+target.name.toUpperCase():
       target?'E — '+target.name.toUpperCase():
       'WASD — ХОДИТЬ · E — ВЗАИМОДЕЙСТВИЕ · M — КАРТА';
   }
 }
-async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen,unlockedDoors:[...unlockedDoors]});}
+async function persist(){
+  await storage.set('progress',{
+    mapVersion:3,floor,player,mission,alarm,live,introSeen,
+    seenByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...seenByFloor[f]]])),
+    unlockedByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...unlockedByFloor[f]]])),
+    seen:[...seenByFloor[1]],unlockedDoors:[...unlockedByFloor[1]]
+  });
+}
 function mark(key){
   mission=markMission(mission,key);
-  if(key==='lockOpen'){world[11][14]='D';unlockedDoors.add(doorId(11,14));updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
+  if(key==='lockOpen'){worlds[1][11][14]='D';unlockedByFloor[1].add(doorId(11,14));updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
   else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
   render();void persist();
 }
@@ -65,10 +79,35 @@ function unlockDoor(door){
   message('ДВЕРЬ '+door.id+' ОТКРЫТА! Вернись на карту и пройди дальше.');
   render();void persist();
 }
-function syncGuards(){for(const guard of guardEntities(live)){const entity=entities.find(e=>e.id===guard.id);if(entity)Object.assign(entity,guard);}}
+function syncGuards(){
+  for(const f of FLOORS){
+    for(const guard of guardEntities(live,f)){
+      const entity=entitiesByFloor[f].find(e=>e.id===guard.id);
+      if(entity)Object.assign(entity,guard);
+    }
+  }
+}
+function activateFloor(next){
+  floor=next;world=worlds[next];entities=entitiesByFloor[next];
+  seen=seenByFloor[next];unlockedDoors=unlockedByFloor[next];
+  route=[];updateVision();
+}
+function stairAtPlayer(){
+  const tile=world[player.row]?.[player.col];
+  if(tile!=='U'&&tile!=='N')return null;
+  return STAIR_LINKS.find(x=>x.row===player.row&&x.col===player.col)||null;
+}
+function changeFloor(){
+  const link=stairAtPlayer();if(!link)return false;
+  const next=floor===1?2:1;
+  activateFloor(next);
+  // Paired staircases have the same coordinates, so the character arrives safely.
+  message('ЛЕСТНИЦА: ЭТАЖ '+floor+'. Ты в зоне «'+zoneAt(player.row,player.col,floor)+'». Исследуй новый уровень.');
+  render();void persist();return true;
+}
 function resetAttempt(){
   live=releaseAfterCheckpoint(live);alarm=live.alarm.value;player={...START_POSITION};
-  updateVision();syncGuards();route=[];
+  activateFloor(1);syncGuards();route=[];
   message('Тревога достигла предела! Герой вернулся к контрольной точке. Пройденные задания сохранены.');
   render();void persist();
 }
@@ -79,6 +118,7 @@ function raiseAlarm(value){
 }
 function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
+  if(stairAtPlayer()){changeFloor();return;}
   const door=adjacentDoor(world,player,unlockedDoors);
   if(door){void panels.open('door',door);return;}
   const target=nearestInteraction(player,world,entities);
@@ -99,15 +139,17 @@ function move(direction){
   if(!outcome.moved){message(outcome.reason);return;}
   player=outcome.player;
   updateVision();
-  const simulation=advanceLiveWorld(live,player,world);
+  const simulation=advanceLiveWorld(live,player,world,floor);
   live=simulation.state;alarm=live.alarm.value;
   syncGuards();
   if(simulation.caught){resetAttempt();return;}
-  if(world[player.row][player.col]==='E'){
+  if(world[player.row][player.col]==='U'||world[player.row][player.col]==='N'){
+    message('Лестница на другой этаж. Нажми E или кнопку ДЕЙСТВИЕ, чтобы перейти.');
+  }else if(floor===1&&world[player.row][player.col]==='E'){
     if(canFinish(mission)){mark('finished');panels.open('success');}
     else message('Выход найден! Сначала выполни учебные контрольные точки.');
   }else if(simulation.events.length){message(simulation.events.map(e=>e.description).join(' · ')+' · Тревога '+alarm+'/100');}
-  else message(zoneAt(player.row,player.col)+' · клетка ('+player.row+','+player.col+') · нажми E рядом с объектом.');
+  else message(zoneAt(player.row,player.col,floor)+' · этаж '+floor+' · клетка ('+player.row+','+player.col+') · E возле объектов.');
   route=[];render();void persist();
 }
 async function init(){
