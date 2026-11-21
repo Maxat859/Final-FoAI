@@ -1,5 +1,8 @@
 import {bayesianUpdate,formatProbability} from '../algorithms/bayes.js';
 import {createEncounter,chooseEncounterAction,applyEncounterMove,ENCOUNTER_ACTIONS} from '../game/tacticalEncounter.js';
+import {selectQuestion,questionsFor} from '../education/questionBank.js';
+import {getDoorQuestion,DIFFICULTY_LABEL} from '../game/doorChallenges.js';
+import {checkAnswer} from '../education/questionChecker.js';
 const codeBank={
   python:[{q:'Что выводит print(len("QAMAL"))?',options:['4','5','6','Ошибка'],correct:1,why:'len() возвращает количество символов — 5.'},{q:'Что делает range(3)?',options:['0, 1, 2','1, 2, 3','0, 1, 2, 3','Ошибка'],correct:0,why:'Верхняя граница range не включается.'}],
   go:[{q:'Что напечатает fmt.Println(2 + 3)?',options:['23','5','Ошибка','0'],correct:1,why:'Складываются два целых числа.'},{q:'Чему равна длина []int{1,2,3}?',options:['2','3','4','0'],correct:1,why:'len() возвращает 3 элемента.'}]
@@ -10,12 +13,17 @@ export function createPanels(dialog,handlers){
   let active=null;
   let codeIndex=0, currentQuestion=null;
   let encounter=null,encounterSummary='';
+  let selectedDoor=null,doorAttempt=0,doorLanguage='python',doorQuestion=null;
+  let npcScript=[],npcIndex=0,npcTimer=null,npcFullyTyped=false;
+  let practiceDifficulty='easy',practiceIndex=0;
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
-  function close(){dialog.hidden=true;active=null;}
-  async function open(name){active=name;dialog.hidden=false;inner.scrollTop=0;
+  function close(){if(npcTimer)clearInterval(npcTimer);npcTimer=null;dialog.classList.remove('npc-open');dialog.hidden=true;active=null;}
+  async function open(name,data=null){active=name;dialog.hidden=false;dialog.classList.toggle('npc-open',name==='npc');inner.scrollTop=0;
+    if(name==='door'){selectedDoor=data;doorAttempt=0;doorLanguage=handlers.language();drawDoor();}
+    if(name==='npc'){npcScript=getNpcScript(data);npcIndex=0;renderNpc();}
     if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники двигаются после твоих ходов. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
     if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Быстрые кнопки справа открывают учебные демо-окна без необходимости искать комнату.</p>`);
-    if(name==='code')await drawCode();
+    if(name==='code')drawCode();
     if(name==='bayes')drawBayes();
     if(name==='map')drawMap();
     if(name==='planner')drawPlanner();
@@ -27,32 +35,22 @@ export function createPanels(dialog,handlers){
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
     dialog.querySelector('[data-close]')?.focus();
   }
-  async function drawCode(){
-    const lang=handlers.language();
-    try{
-      const response=await fetch('./data/questions-'+lang+'.json');
-      if(!response.ok)throw new Error('HTTP '+response.status);
-      const data=await response.json();
-      const questions=Array.isArray(data)?data:data.questions;
-      if(!Array.isArray(questions)||questions.length===0)throw new Error('Нет заданий');
-      const q=questions[codeIndex%questions.length];
-      currentQuestion=q;
-      const control=q.choices
-        ? '<div class="option-list">'+Object.entries(q.choices).map(([key,value])=>
-            '<label><input type="radio" name="code-answer" value="'+esc(key)+'"> '+esc(key)+') '+esc(value)+'</label>').join('')+'</div>'
-        : '<label>Напиши ответ<input id="code-free-answer" type="text" autocomplete="off" placeholder="Ответ"></label>';
-      const snippet=q.codeSnippet?'<pre class="panel-note">'+esc(q.codeSnippet)+'</pre>':'';
-      inner.innerHTML=shell('КОДОВОЕ ЗАДАНИЕ',
-        '<p class="panel-note">Язык: '+esc(lang.toUpperCase())+' · Учебные ошибки не поднимают тревогу.</p>'+
-        '<div class="quiz-question">'+esc(q.prompt)+'</div>'+snippet+control+
-        '<button id="code-check">ПРОВЕРИТЬ</button><div id="code-feedback" class="panel-feedback" role="status"></div>',
-        'LEARN / PYTHON + GO');
-    }catch(err){
-      currentQuestion=null;
-      inner.innerHTML=shell('КОДОВОЕ ЗАДАНИЕ',
-        '<p class="panel-note">Не удалось прочитать вопросы из data/questions-'+esc(lang)+'.json: '+esc(err.message)+'</p>',
-        'LEARN / PYTHON + GO');
-    }
+  function drawCode(){
+    const language=handlers.language();
+    const questions=questionsFor(language,practiceDifficulty);
+    currentQuestion=selectQuestion(language,practiceDifficulty,practiceIndex);
+    const q=currentQuestion;
+    const options=['easy','medium','hard'].map(d=>'<option value="'+d+'" '+(practiceDifficulty===d?'selected':'')+'>'+
+      DIFFICULTY_LABEL[d]+'</option>').join('');
+    inner.innerHTML=shell('ТРЕНИРОВОЧНЫЙ ТЕРМИНАЛ',
+      '<p class="panel-note">Всего по 240 вопросов на каждом языке. Здесь можно тренироваться без тревоги.</p>'+
+      '<div class="quest-topline"><label>Уровень сложности<select id="practice-difficulty">'+options+'</select></label>'+
+      '<span class="difficulty-badge">'+language.toUpperCase()+' · '+questions.length+' задач</span></div>'+
+      '<h3>'+esc(q.title)+'</h3><p>'+esc(q.prompt)+'</p><pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+
+      '<label>Твой ответ<input id="code-free-answer" type="text" autocomplete="off" placeholder="Введи результат программы"></label>'+
+      '<div class="quest-actions"><button id="code-check">ПРОВЕРИТЬ</button><button id="practice-next">ДРУГОЙ ВОПРОС →</button></div>'+
+      '<div id="code-feedback" class="panel-feedback" role="status"></div>',
+      'LEARN / PYTHON + GO');
   }
   function drawBayes(){inner.innerHTML=shell('BAYESIAN INFERENCE',`<p class="panel-note">Измени параметры игрового датчика: обновлённая вероятность рассчитывается по формуле Байеса, а не по фиксированному ответу.</p><div class="lab-grid"><label>Prior (0–1)<input id="prior" type="number" min="0" max="1" step="0.05" value="0.20"></label><label>Sensitivity<input id="sensitivity" type="number" min="0" max="1" step="0.05" value="0.90"></label><label>False Positive<input id="false-positive" type="number" min="0" max="1" step="0.05" value="0.10"></label><label>Сигнал<select id="signal"><option value="ALARM">ALARM</option><option value="NORMAL">NORMAL</option></select></label></div><button id="bayes-run">РАССЧИТАТЬ</button><div class="panel-feedback" id="bayes-result" role="status">P(Danger | Signal) = ?</div>`,'AI / WEEK 6');}
   function drawMap(){inner.innerHTML=shell('ИССЛЕДОВАННАЯ КАРТА',`<p>Исследовано: <strong>${handlers.seen().size}</strong> из ${handlers.dimensions().rows*handlers.dimensions().cols} клеток.</p><canvas id="panel-map" class="panel-canvas" width="300" height="200"></canvas><p class="panel-note">Чёрное — ещё не исследовано, тёмное — изучено раньше, светлое — видно сейчас. Поиск пути работает только с известной зоной.</p>`);const canvas=inner.querySelector('#panel-map');handlers.drawMap(canvas);}
@@ -77,25 +75,133 @@ export function createPanels(dialog,handlers){
       '<div class="panel-feedback">'+esc(encounterSummary)+'</div>'+
       '<div class="filter-row">'+controls+'</div>','AI / WEEK 4');
   }
+  function drawDoor(){
+    if(!selectedDoor)return;
+    doorQuestion=getDoorQuestion(selectedDoor,doorLanguage,doorAttempt);
+    const q=doorQuestion,level=DIFFICULTY_LABEL[selectedDoor.difficulty];
+    const choices='<button type="button" data-door-language="python" class="'+(doorLanguage==='python'?'selected':'')+'">PYTHON</button>'+
+      '<button type="button" data-door-language="go" class="'+(doorLanguage==='go'?'selected':'')+'">GO</button>';
+    inner.innerHTML=shell('ДВЕРЬ '+selectedDoor.id+' · '+level,
+      '<div class="quest-door-title"><span class="lock-symbol">▣</span><div>'+
+      '<strong>'+esc(level)+' УРОВЕНЬ</strong><p>Правильный ответ открывает дверь. Сложность зависит от сектора карты.</p></div></div>'+
+      '<div class="quest-language">'+choices+'</div>'+
+      '<div class="quest-topline"><span class="difficulty-badge">'+doorLanguage.toUpperCase()+' / '+esc(q.title)+'</span>'+
+      '<span class="quest-number">ЗАДАНИЕ #'+(doorAttempt+1)+'</span></div>'+
+      '<h3>'+esc(q.prompt)+'</h3><pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+
+      '<label class="quest-label">Введи результат программы<input id="door-answer" type="text" autocomplete="off" placeholder="Например: 5"></label>'+
+      '<div class="quest-actions"><button id="door-check">ПРОВЕРИТЬ И ОТКРЫТЬ</button>'+
+      '<button id="door-next">ДРУГОЕ ЗАДАНИЕ</button></div>'+
+      '<div class="panel-feedback" id="door-feedback" role="status">Подсказка: '+esc(q.hint)+'</div>',
+      'QAMAL / DOOR CHALLENGE');
+    inner.querySelector('#door-answer')?.focus();
+  }
+
+  function getNpcScript(npc){
+    const person=npc?.id??'unknown';
+    const scripts={
+      arman:[
+        ['Арман','Ерасыл! Я надеялся, что ты меня услышишь. Твой файл в системе выглядит подозрительно.'],
+        ['Ерасыл','Кто-то изменил моё досье? Как мне это проверить?'],
+        ['Арман','Ищи жёлтые значки на дверях. Подойди и нажми E: каждая дверь проверяет код на Python или Go.'],
+        ['Арман','Начни с лёгких заданий, затем иди к комнате камер. Нажми M, чтобы видеть уже изученную территорию.']
+      ],
+      ruslan:[
+        ['Руслан','Тихо, Ерасыл. Здесь постоянно меняются данные наблюдений.'],
+        ['Ерасыл','И в чём именно проблема?'],
+        ['Руслан','Посмотри виртуальные камеры и открой архив досье. Там есть записи, которые нужно проверить.'],
+        ['Руслан','Если результат не сходится, отметь неверное наблюдение — журнал сохранит изменение.']
+      ],
+      guard1:[
+        ['Охранник','Задержись у терминала. Проход закрыт, пока система не увидит верный ответ.'],
+        ['Ерасыл','Я могу выбрать язык?'],
+        ['Охранник','Да. Python или Go. Чем дальше крыло, тем сложнее задачи.']
+      ],
+      guard2:[
+        ['Старший охранник','Система патрулирования включена. Не торопись с ответами.'],
+        ['Ерасыл','Почему у меня повышается тревога?'],
+        ['Старший охранник','На некоторых контрольных точках неверное решение вызывает сигнал. Проверяй код внимательно.']
+      ]
+    };
+    return scripts[person]??[
+      [npc?.name||'Заключённый','Ты видел новые двери? У каждой есть задача по программированию.'],
+      ['Ерасыл','Спасибо, теперь я понимаю, куда идти.']
+    ];
+  }
+  function renderNpc(){
+    if(npcTimer)clearInterval(npcTimer);
+    npcTimer=null; npcFullyTyped=false;
+    if(npcIndex>=npcScript.length){close();return;}
+    const [speaker,phrase]=npcScript[npcIndex];
+    const portraitId=speaker==='Ерасыл'?'erasyl':speaker==='Арман'?'arman':
+      speaker==='Руслан'?'ruslan':speaker==='Охранник'||speaker==='Старший охранник'?'guard':'default';
+    const portrait=handlers.portraitFor?.(portraitId)||'./assets/characters/prisoners/prisoner.png';
+    inner.innerHTML='<div class="npc-dialog">'+
+      '<div class="npc-portrait portrait-'+portraitId+'"><img src="'+esc(portrait)+'" alt="Портрет '+esc(speaker)+'"></div>'+
+      '<div class="npc-dialog-content"><div class="npc-speaker">'+esc(speaker)+'</div>'+
+      '<div class="npc-words" id="npc-words" role="status"></div>'+
+      '<div class="npc-footer"><span>ДИАЛОГ '+(npcIndex+1)+'/'+npcScript.length+' · E / ENTER — ДАЛЕЕ</span>'+
+      '<button id="npc-next">'+(npcIndex+1<npcScript.length?'ДАЛЕЕ →':'ЗАКРЫТЬ ✓')+'</button></div></div></div>';
+    const el=inner.querySelector('#npc-words');
+    let length=0;
+    npcTimer=setInterval(()=>{
+      length=Math.min(phrase.length,length+2);
+      el.textContent=phrase.slice(0,length);
+      if(length===phrase.length){clearInterval(npcTimer);npcTimer=null;npcFullyTyped=true;}
+    },20);
+  }
+  function advanceNpc(){
+    if(active!=='npc')return false;
+    if(!npcFullyTyped){
+      if(npcTimer)clearInterval(npcTimer);npcTimer=null;
+      inner.querySelector('#npc-words').textContent=npcScript[npcIndex][1];
+      npcFullyTyped=true;
+    }else{npcIndex++;renderNpc();}
+    return true;
+  }
   function drawCCTV(){inner.innerHTML=shell('QAMAL SURVEILLANCE',`<p class="panel-note">Виртуальные камеры показывают участки той же 2D-карты. Это игровые события, НЕ анализ настоящего видео.</p><div class="filter-row"><button data-camera="CAM-01">CAM-01</button><button data-camera="CAM-02">CAM-02</button><button data-camera="CAM-03">CAM-03</button></div><canvas id="camera-preview" width="288" height="192" class="panel-canvas"></canvas><p class="panel-note" id="camera-status">CAM-01 / ПРОГРАММНАЯ СИМУЛЯЦИЯ</p><button id="camera-visit">ОТМЕТИТЬ ИЗУЧЕНИЕ CCTV</button>`,'SIMULATION / CAMERAS');handlers.drawCamera(inner.querySelector('#camera-preview'),'CAM-01');}
+  dialog.addEventListener('change',e=>{
+    if(e.target.id==='practice-difficulty'){practiceDifficulty=e.target.value;practiceIndex=0;drawCode();}
+  });
   dialog.addEventListener('click',async e=>{
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
     const id=e.target.id;
     if(e.target.dataset.camera){const cam=e.target.dataset.camera;handlers.drawCamera(inner.querySelector('#camera-preview'),cam);inner.querySelector('#camera-status').textContent=`${cam} / ВИРТУАЛЬНАЯ КАМЕРА`;return;}
-    if(id==='code-check'){
-      const fb=inner.querySelector('#code-feedback');
-      if(!currentQuestion){fb.textContent='Задание ещё не загружено.';return;}
-      const selected=inner.querySelector('[name=code-answer]:checked');
-      const answer=selected?.value??inner.querySelector('#code-free-answer')?.value;
-      if(!answer){fb.textContent='Сначала выбери или введи ответ.';return;}
-      try{
-        const {checkAnswer}=await import('../education/questionChecker.js');
-        const result=checkAnswer(currentQuestion,answer);
-        fb.textContent=result.feedback;
-        if(result.correct){handlers.mark('learned');codeIndex++;}
-      }catch(error){fb.textContent='Ошибка проверки: '+error.message;}
+    if(id==='npc-next'){advanceNpc();return;}
+    if(e.target.dataset.doorLanguage){
+      doorLanguage=e.target.dataset.doorLanguage;doorAttempt=0;drawDoor();return;
+    }
+    if(id==='door-next'){doorAttempt++;drawDoor();return;}
+    if(id==='door-check'){
+      if(!doorQuestion)return;
+      const answer=inner.querySelector('#door-answer')?.value;
+      const feedback=inner.querySelector('#door-feedback');
+      if(!answer?.trim()){feedback.textContent='Введи ответ перед проверкой.';return;}
+      const result=checkAnswer(doorQuestion,answer);
+      if(result.correct){
+        handlers.unlockDoor?.(selectedDoor);
+        inner.innerHTML=shell('ДВЕРЬ ОТКРЫТА ✓',
+          '<div class="quest-unlocked">✓ ДОСТУП РАЗРЕШЁН</div>'+
+          '<p>'+esc(doorQuestion.explanation)+'</p>'+
+          '<p class="panel-note">Вернись к карте и пройди через открытую дверь.</p>'+
+          '<button data-close>ПРОДОЛЖИТЬ ИГРУ →</button>',
+          'QAMAL / CHECKPOINT COMPLETE');
+      }else{
+        feedback.textContent='Пока неверно. '+doorQuestion.hint+
+          (selectedDoor.difficulty==='easy'?' В лёгком секторе нет штрафа тревоги.':' Сигнал контрольной точки немного повысил тревогу.');
+        if(selectedDoor.difficulty!=='easy')handlers.raiseAlarm(selectedDoor.difficulty==='medium'?5:8);
+      }
       return;
     }
+    if(id==='code-check'){
+      const feedback=inner.querySelector('#code-feedback');
+      const answer=inner.querySelector('#code-free-answer')?.value;
+      if(!answer?.trim()){feedback.textContent='Сначала введи ответ.';return;}
+      const result=checkAnswer(currentQuestion,answer);
+      feedback.textContent=result.feedback;
+      if(result.correct)handlers.mark('learned');
+      return;
+    }
+    if(id==='practice-next'){practiceIndex++;drawCode();return;}
     if(id==='bayes-run'){const v=k=>Number(inner.querySelector('#'+k).value);const fb=inner.querySelector('#bayes-result');
       try{const p=bayesianUpdate({prior:v('prior'),sensitivity:v('sensitivity'),falsePositive:v('false-positive'),signal:inner.querySelector('#signal').value});
         fb.textContent=`Evidence: ${formatProbability(p.evidenceProbability)} | Posterior: ${formatProbability(p.posterior)}`;
@@ -136,5 +242,5 @@ export function createPanels(dialog,handlers){
       drawTactical();return;
     }
   });
-  return {open,close,isOpen:()=>!dialog.hidden};
+  return {open,close,advanceNpc,isOpen:()=>!dialog.hidden};
 }
