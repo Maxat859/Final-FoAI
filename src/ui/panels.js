@@ -7,12 +7,12 @@ const esc=s=>String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;
 export function createPanels(dialog,handlers){
   const inner=dialog.querySelector('#dialog-inner');
   let active=null;
-  let codeIndex=0;
+  let codeIndex=0, currentQuestion=null;
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
   function close(){dialog.hidden=true;active=null;}
   async function open(name){active=name;dialog.hidden=false;inner.scrollTop=0;
     if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Быстрые кнопки справа открывают учебные демо-окна без необходимости искать комнату.</p>`);
-    if(name==='code')drawCode();
+    if(name==='code')await drawCode();
     if(name==='bayes')drawBayes();
     if(name==='map')drawMap();
     if(name==='planner')drawPlanner();
@@ -24,8 +24,32 @@ export function createPanels(dialog,handlers){
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
     dialog.querySelector('[data-close]')?.focus();
   }
-  function drawCode(){const lang=handlers.language(),question=codeBank[lang][codeIndex%codeBank[lang].length];
-    inner.innerHTML=shell('КОДОВОЕ ЗАДАНИЕ',`<p class="panel-note">Выбранный язык: ${lang.toUpperCase()} · Ошибки в учебном классе не увеличивают тревогу.</p><div class="quiz-question">${esc(question.q)}</div><div class="option-list">${question.options.map((o,i)=>`<label><input type="radio" name="code-answer" value="${i}"> ${String.fromCharCode(65+i)}) ${esc(o)}</label>`).join('')}</div><button id="code-check">ПРОВЕРИТЬ</button><div id="code-feedback" class="panel-feedback" role="status"></div>`,'LEARN / PYTHON + GO');
+  async function drawCode(){
+    const lang=handlers.language();
+    try{
+      const response=await fetch('./data/questions-'+lang+'.json');
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      const questions=Array.isArray(data)?data:data.questions;
+      if(!Array.isArray(questions)||questions.length===0)throw new Error('Нет заданий');
+      const q=questions[codeIndex%questions.length];
+      currentQuestion=q;
+      const control=q.choices
+        ? '<div class="option-list">'+Object.entries(q.choices).map(([key,value])=>
+            '<label><input type="radio" name="code-answer" value="'+esc(key)+'"> '+esc(key)+') '+esc(value)+'</label>').join('')+'</div>'
+        : '<label>Напиши ответ<input id="code-free-answer" type="text" autocomplete="off" placeholder="Ответ"></label>';
+      const snippet=q.codeSnippet?'<pre class="panel-note">'+esc(q.codeSnippet)+'</pre>':'';
+      inner.innerHTML=shell('КОДОВОЕ ЗАДАНИЕ',
+        '<p class="panel-note">Язык: '+esc(lang.toUpperCase())+' · Учебные ошибки не поднимают тревогу.</p>'+
+        '<div class="quiz-question">'+esc(q.prompt)+'</div>'+snippet+control+
+        '<button id="code-check">ПРОВЕРИТЬ</button><div id="code-feedback" class="panel-feedback" role="status"></div>',
+        'LEARN / PYTHON + GO');
+    }catch(err){
+      currentQuestion=null;
+      inner.innerHTML=shell('КОДОВОЕ ЗАДАНИЕ',
+        '<p class="panel-note">Не удалось прочитать вопросы из data/questions-'+esc(lang)+'.json: '+esc(err.message)+'</p>',
+        'LEARN / PYTHON + GO');
+    }
   }
   function drawBayes(){inner.innerHTML=shell('BAYESIAN INFERENCE',`<p class="panel-note">Измени параметры игрового датчика: обновлённая вероятность рассчитывается по формуле Байеса, а не по фиксированному ответу.</p><div class="lab-grid"><label>Prior (0–1)<input id="prior" type="number" min="0" max="1" step="0.05" value="0.20"></label><label>Sensitivity<input id="sensitivity" type="number" min="0" max="1" step="0.05" value="0.90"></label><label>False Positive<input id="false-positive" type="number" min="0" max="1" step="0.05" value="0.10"></label><label>Сигнал<select id="signal"><option value="ALARM">ALARM</option><option value="NORMAL">NORMAL</option></select></label></div><button id="bayes-run">РАССЧИТАТЬ</button><div class="panel-feedback" id="bayes-result" role="status">P(Danger | Signal) = ?</div>`,'AI / WEEK 6');}
   function drawMap(){inner.innerHTML=shell('ИССЛЕДОВАННАЯ КАРТА',`<p>Исследовано: <strong>${handlers.seen().size}</strong> из ${handlers.dimensions().rows*handlers.dimensions().cols} клеток.</p><canvas id="panel-map" class="panel-canvas" width="300" height="200"></canvas><p class="panel-note">Неизведанные клетки остаются скрыты. Поиск пути также должен работать только с известной зоной.</p>`);const canvas=inner.querySelector('#panel-map');handlers.drawMap(canvas);}
@@ -37,10 +61,19 @@ export function createPanels(dialog,handlers){
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
     const id=e.target.id;
     if(e.target.dataset.camera){const cam=e.target.dataset.camera;handlers.drawCamera(inner.querySelector('#camera-preview'),cam);inner.querySelector('#camera-status').textContent=`${cam} / ВИРТУАЛЬНАЯ КАМЕРА`;return;}
-    if(id==='code-check'){const sel=inner.querySelector('[name=code-answer]:checked'),fb=inner.querySelector('#code-feedback');if(!sel){fb.textContent='Сначала выбери ответ.';return;}
-      const q=codeBank[handlers.language()][codeIndex%codeBank[handlers.language()].length];
-      const good=Number(sel.value)===q.correct;fb.textContent=(good?'✓ ПРАВИЛЬНО! ':'✗ ПОПРОБУЙ ЕЩЁ. ')+q.why;
-      if(good){handlers.mark('learned');codeIndex++;}return;
+    if(id==='code-check'){
+      const fb=inner.querySelector('#code-feedback');
+      if(!currentQuestion){fb.textContent='Задание ещё не загружено.';return;}
+      const selected=inner.querySelector('[name=code-answer]:checked');
+      const answer=selected?.value??inner.querySelector('#code-free-answer')?.value;
+      if(!answer){fb.textContent='Сначала выбери или введи ответ.';return;}
+      try{
+        const {checkAnswer}=await import('../education/questionChecker.js');
+        const result=checkAnswer(currentQuestion,answer);
+        fb.textContent=result.feedback;
+        if(result.correct){handlers.mark('learned');codeIndex++;}
+      }catch(error){fb.textContent='Ошибка проверки: '+error.message;}
+      return;
     }
     if(id==='bayes-run'){const v=k=>Number(inner.querySelector('#'+k).value);const fb=inner.querySelector('#bayes-result');
       try{const p=bayesianUpdate({prior:v('prior'),sensitivity:v('sensitivity'),falsePositive:v('false-positive'),signal:inner.querySelector('#signal').value});
