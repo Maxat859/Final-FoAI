@@ -28,11 +28,24 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     sprite(entity.spriteId||ASSET_IDS.player,x,y);
     if(highlight){ctx.lineWidth=2;ctx.strokeStyle='#f3c66a';ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);}
   }
-  function frame({world,player,entities=[],seen=new Set(),route=[]}){
+  function frame({world,player,entities=[],seen=new Set(),route=[],alarm=0,mission={}}){
     ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#070c13';ctx.fillRect(0,0,canvas.width,canvas.height);
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-      if(!seen.has(`${r},${c}`))continue;
-      drawTile(r,c,world);
+      if(!seen.has(`${r},${c}`)){
+        // Unexplored rooms are silhouettes, not a large empty black rectangle.
+        const x=c*TILE,y=r*TILE,sym=world[r][c];
+        ctx.fillStyle=sym==='#'?'#1a2b3a':'#0e1b28';ctx.fillRect(x,y,TILE,TILE);
+        if(sym==='#'){ctx.fillStyle='#283c4c';ctx.fillRect(x+2,y+2,TILE-4,3);}
+        ctx.strokeStyle='rgba(89,111,128,.08)';ctx.strokeRect(x+.5,y+.5,TILE,TILE);
+      }else drawTile(r,c,world);
+    }
+    // Visible interactions are marked inside the game world, not hidden in side menus.
+    const objectives=[{row:4,col:16,key:'learned',label:'CODE'},{row:11,col:26,key:'lockOpen',label:'CSP'},{row:3,col:25,key:'visitedCCTV',label:'CCTV'},{row:16,col:18,key:'dossiers',label:'FILE'}];
+    for(const o of objectives){if(!seen.has(`${o.row},${o.col}`))continue;
+      const x=o.col*TILE,y=o.row*TILE;
+      const complete=Boolean(mission[o.key]);
+      ctx.fillStyle=complete?'#4aaf87':'#efbd5d';ctx.fillRect(x+24,y+1,7,7);
+      ctx.fillStyle='#09111b';ctx.font='bold 8px monospace';ctx.fillText(complete?'✓':'!',x+25,y+7);
     }
     for(const [label,col,row] of ROOM_LABELS){if(!seen.has(`${row},${col}`))continue;
       ctx.font='bold 9px monospace';ctx.fillStyle='rgba(7,15,23,.8)';ctx.fillRect(col*TILE+3,row*TILE+5,Math.ceil(ctx.measureText(label).width)+9,14);
@@ -42,7 +55,13 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.fillStyle='rgba(240,191,90,.42)';ctx.fillRect(point.col*TILE+9,point.row*TILE+9,14,14);
     }
     for(const entity of entities)if(seen.has(`${entity.row},${entity.col}`))drawEntity(entity,false);
+    // Player has a subtle visible halo; red flashing corners signal elevated alarm.
+    const px=player.col*TILE+TILE/2,py=player.row*TILE+TILE/2;
+    const aura=ctx.createRadialGradient(px,py,5,px,py,TILE*2);
+    aura.addColorStop(0,'rgba(241,192,92,.17)');aura.addColorStop(1,'rgba(241,192,92,0)');
+    ctx.fillStyle=aura;ctx.fillRect(px-TILE*2,py-TILE*2,TILE*4,TILE*4);
     drawEntity({...player,spriteId:ASSET_IDS.player},true);
+    if(alarm>=60){ctx.strokeStyle='rgba(235,80,75,.65)';ctx.lineWidth=6;ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);}
     drawMini({world,player,entities,seen});
   }
   function drawMini({world,player,entities=[],seen=new Set()}){
