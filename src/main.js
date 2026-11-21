@@ -276,6 +276,14 @@ async function init(){
     live={...live,alarm:changeAlarm(live.alarm,alarm-live.alarm.value)};
     // Show the new wake-up scene once to players migrating old saves too.
     introSeen=Boolean(previous.introSeen&&previous.mapVersion===3);
+    learningProgress=validateProgress(previous.learningProgress);
+    mistakeJournal=Array.isArray(previous.mistakeJournal)?previous.mistakeJournal.slice(-45):[];
+    const stored=previous.storyStage;
+    storyStage=stored==='free'||stored==='classroom'?stored:(introSeen?'free':'wake');
+    if(storyStage==='classroom'&&floor!==1){
+      activateFloor(1,false);
+      player={...START_POSITION,row:CLASSROOM_DESK.row,col:CLASSROOM_DESK.col};
+    }
     if(mission.lockOpen){
       worlds[1][11][14]='D';
       unlockedByFloor[1].add(doorId(11,14));
@@ -294,7 +302,12 @@ async function init(){
   const labUI=createTrainingLabUI(inner);await labUI.load();
   panels=createPanels($('game-dialog'),{
     dossiers:dossierUI,lab:labUI,
-    language:()=>$('language-select').value,mark,raiseAlarm,unlockDoor,
+    language:()=>$('language-select').value,
+    setLanguage:value=>{if(value==='python'||value==='go'){$('language-select').value=value;void storage.set('language',value);render();}},
+    getProgress:()=>learningProgress,getMistakes:()=>mistakeJournal,
+    onLessonComplete:onLessonCompleted,recordMistake,
+    onWake:()=>{void guardArrives();},onEscortStart:()=>{void beginEscort();},
+    mark,raiseAlarm,unlockDoor,
     portraitFor:(person)=>{
       const named=new Set(['erasyl','arman','ruslan','guard','daniyar','madina','timur']);
       if(named.has(person))return './assets/portraits/'+person+'.svg';
@@ -328,8 +341,12 @@ async function init(){
   });
   $('play-btn').addEventListener('click',()=>{
     show($('game-screen'));$('tools-popup').hidden=true;renderer.resize();render();
-    message('Этаж '+floor+'. Выходи из камеры, изучай тюрьму и находи лестницы U / N.');
-    if(!introSeen){introSeen=true;void panels.open('wake');void persist();}
+    message('Этаж '+floor+'. Основы языков доступны в классе, библиотеке и у Армана.');
+    if(storyStage==='wake'){
+      introSeen=true;void panels.open('wake');void persist();
+    }else if(storyStage==='classroom'){
+      void panels.open('classroom');
+    }
   });
   $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
@@ -372,6 +389,6 @@ async function init(){
   });
   render();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
