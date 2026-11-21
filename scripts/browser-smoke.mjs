@@ -11,6 +11,17 @@ try {
   await page.locator('#game-dialog [data-close]').first().click();
   await page.locator('#game-canvas').waitFor({state:'visible'});
 
+  const startingCell=await page.evaluate(()=>({
+    position:window.QAMAL_DEBUG.getPosition(),
+    bed:window.QAMAL_DEBUG.getTile(10,3),
+    bars:window.QAMAL_DEBUG.getTile(9,4),
+    floor:window.QAMAL_DEBUG.getFloor()
+  }));
+  assert.equal(startingCell.floor,1);
+  assert.equal(startingCell.position.row,10);
+  assert.equal(startingCell.bed,'b');
+  assert.equal(startingCell.bars,'G');
+  await page.screenshot({path:'/tmp/qamal-cell-wakeup.png',fullPage:true});
   const screen=await page.locator('#game-canvas').boundingBox();
   assert.ok(screen.width>=1270&&screen.height>=710,'Canvas must fill viewport');
   assert.equal(await page.locator('.game-sidebar').count(),0,'Permanent sidebar must be removed');
@@ -63,7 +74,20 @@ try {
   await page.locator('#tools-close').click();
   assert.equal(await page.locator('#tools-popup').isVisible(),false);
 
-  assert.deepEqual(errors,[],'Browser console must contain no uncaught errors');
+  const reachStairs=await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(10,10,1));
+  assert.equal(reachStairs,true);
+  assert.match(await page.locator('#action-prompt').innerText(),/ЛЕСТНИЦА|ЭТАЖ/);
+  await page.keyboard.press('e');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),2);
+  assert.match(await page.locator('#floor-indicator').innerText(),/ЭТАЖ 2/);
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(10,10)), 'N');
+  await page.screenshot({path:'/tmp/qamal-second-floor.png',fullPage:true});
+  const revealed=await page.evaluate(()=>window.QAMAL_DEBUG.getExploredByFloor());
+  assert.ok(revealed[2] > 0&&revealed[2] < 160);
+  await page.keyboard.press('e');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getFloor()),1);
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(10,10)), 'U');
+    assert.deepEqual(errors,[],'Browser console must contain no uncaught errors');
   await page.screenshot({path:'/tmp/qamal-game-browser-smoke.png',fullPage:true});
   console.log('Browser smoke passed: fullscreen, movement, interactive door, Python/Go question, persistent unlock, NPC portrait dialogue, menu.');
 } finally {

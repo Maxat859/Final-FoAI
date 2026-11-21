@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {COLS,ROWS,VIEW_COLS,VIEW_ROWS,EXIT_POSITION,createLevel,isPassable} from '../src/config.js';
+import {BLOCKED_TILES,COLS,ROWS,VIEW_COLS,VIEW_ROWS,EXIT_POSITION,createLevel,isPassable} from '../src/config.js';
 import {START_POSITION,VISION_RADIUS,computeFieldOfView,discover} from '../src/game/player.js';
 import {getCameraOffset} from '../src/game/camera.js';
 import {findPath} from '../src/algorithms/search.js';
@@ -19,7 +19,7 @@ test('new QAMAL level is 48x32 and preserves the original checkpoints',()=>{
 
 test('new wings are connected: exit reachable without crossing walls',()=>{
   const world=createLevel();
-  const blocked=new Set(['#','B','b','d','t','c']);
+  const blocked=BLOCKED_TILES;
   const grid=world.map(row=>row.map(x=>blocked.has(x)?'#':x).join(''));
   const route=findPath({grid,start:START_POSITION,goal:EXIT_POSITION,algorithm:'A*'});
   assert.equal(route.found,true);
