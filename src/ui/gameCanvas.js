@@ -1,4 +1,5 @@
-import {ASSET_IDS,COLS,ROOM_LABELS,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS} from '../config.js';
+import {ASSET_IDS,COLS,roomLabelsFor,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS} from '../config.js';
+import {paintPrisonTile} from './prisonTextures.js';
 import {getCameraOffset} from '../game/camera.js';
 import {doorDifficulty,doorId} from '../game/doorChallenges.js';
 
@@ -49,13 +50,8 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     if(img&&img.naturalWidth)context.drawImage(img,x,y,size,size);
     else fallback(context,id,x,y,size);
   }
-  function drawTile(world,row,col,x,y){
-    const symbol=world[row][col];
-    const floor=(row<8&&col>20)||(row>14&&col>14)?ASSET_IDS.floorDark:ASSET_IDS.floor;
-    sprite(floor,x,y);
-    if(ICONS[symbol])sprite(ICONS[symbol],x,y);
-    ctx.strokeStyle='rgba(6,18,29,.19)';
-    ctx.strokeRect(x+.5,y+.5,TILE,TILE);
+  function drawTile(world,row,col,x,y,floor,opened){
+    paintPrisonTile(ctx,world[row][col],x,y,row,col,floor,opened);
   }
   function drawEntity(entity,camera,highlight=false){
     const x=(entity.col-camera.col)*TILE,y=(entity.row-camera.row)*TILE;
@@ -67,7 +63,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
     }
   }
-  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},unlockedDoors=[]}){
+  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},unlockedDoors=[],floor=1}){
     const camera=getCameraOffset(player,world,viewportRows,viewportCols);
     const unlocked=new Set(unlockedDoors);
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -79,7 +75,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       if(r>=world.length||c>=world[r].length)continue;
       const key=r+','+c,x=vc*TILE,y=vr*TILE;
       if(!seen.has(key))continue; // Do not reveal wall outlines or rooms.
-      drawTile(world,r,c,x,y);
+      drawTile(world,r,c,x,y,floor,unlocked.has(doorId(r,c)));
       if(!visible.has(key)){
         ctx.fillStyle='rgba(2,8,16,.79)';
         ctx.fillRect(x,y,TILE,TILE);
@@ -109,7 +105,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.fillStyle='#09111b';ctx.font='bold 8px monospace';ctx.fillText(completed?'✓':'!',x+25,y+8);
     }
 
-    for(const [label,col,row] of ROOM_LABELS){
+    for(const [label,col,row] of roomLabelsFor(floor)){
       if(!visible.has(row+','+col))continue;
       const x=(col-camera.col)*TILE,y=(row-camera.row)*TILE;
       if(x<0||y<0||x>canvas.width-30||y>canvas.height-20)continue;
