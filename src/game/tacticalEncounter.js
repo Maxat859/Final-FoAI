@@ -80,8 +80,10 @@ export function applyEncounterMove(state, action) {
   }
 
   next.turn = next.turn === "guard"
-    ? "player"
-    : "guard";
+  ? "player"
+  : "guard";
+
+  next.currentPlayer = next.turn;
 
   return next;
 }
