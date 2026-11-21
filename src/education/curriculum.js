@@ -194,11 +194,20 @@ export function validateProgress(raw){
   }
   return result;
 }
+// Treat insignificant whitespace around Python/Go punctuation as equivalent.
+// We still do NOT evaluate submitted source code, which is why only
+// prepared single-line examples and output values are checked here.
+export function isCorrectLessonAnswer(question,answer){
+  const normalize=s=>String(s??'').trim().toLowerCase()
+    .replace(/\s*([(){}\[\]=+%<>:,])\s*/g,'$1').replace(/\s+/g,' ');
+  return Array.isArray(question?.acceptedAnswers)&&
+    question.acceptedAnswers.some(expected=>normalize(expected)===normalize(answer));
+}
 export function diagnoseLessonError(question,answer,attempt=1){
   const value=String(answer??'').trim();
   const normalized=value.replace(/\s+/g,' ').toLowerCase();
   const expected=String(question.expectedAnswer);
-  const correct=question.acceptedAnswers.some(x=>String(x).trim().replace(/\s+/g,' ').toLowerCase()===normalized);
+  const correct=isCorrectLessonAnswer(question,answer);
   if(correct)return{correct:true,title:'Верно!',message:question.explanation,steps:question.steps,answer:expected,reveal:false};
   let issue='Попробуй проследить код слева направо, не пропуская присваивания и условия.';
   if(!value)issue='Ответ пока пустой. Введи результат или недостающую строку.';
