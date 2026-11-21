@@ -279,7 +279,7 @@ async function init(){
     learningProgress=validateProgress(previous.learningProgress);
     mistakeJournal=Array.isArray(previous.mistakeJournal)?previous.mistakeJournal.slice(-45):[];
     const stored=previous.storyStage;
-    storyStage=stored==='free'||stored==='classroom'?stored:(introSeen?'free':'wake');
+    storyStage=stored==='free'||stored==='classroom'?stored:(typeof stored==='string'?'wake':(introSeen?'free':'wake'));
     if(storyStage==='classroom'&&floor!==1){
       activateFloor(1,false);
       player={...START_POSITION,row:CLASSROOM_DESK.row,col:CLASSROOM_DESK.col};
