@@ -10,6 +10,8 @@ import {createPanels} from './ui/panels.js';
 import {createDossierStore} from './surveillance/dossierStore.js';
 import {createDossierUI} from './ui/dossierUI.js';
 import {createTrainingLabUI} from './ui/trainingLabUI.js';
+import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities} from './game/liveWorld.js';
+import {changeAlarm} from './game/alarm.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
@@ -19,27 +21,51 @@ const renderer=createRenderer(canvas,mini,assets);
 const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
 const storage=createStorage();
 let player={...START_POSITION},seen=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
-let cspModule=null,panels=null;
+let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
 function render(){
-  renderer.frame({world,player,entities,seen,route});
+  renderer.frame({world,player,entities,seen,route,alarm,mission});
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
   $('alert-value').textContent=`${alarm} / 100`;
   $('alert-fill').style.width=`${alarm}%`;
+  const mode=alarm>=75?'КРИТИЧЕСКАЯ ТРЕВОГА':alarm>=60?'ПОИСК':alarm>=40?'ПОДОЗРЕНИЕ':'ПАТРУЛЬ';
+  const guardLabel=$('guard-state');if(guardLabel)guardLabel.textContent=mode;
+  const logEl=$('live-events');if(logEl)logEl.textContent=live.events.slice(-2).map(e=>`${e.source}: ${e.description}`).join(' · ') || 'СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ';
   $('objective').textContent=objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
 }
-async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm});}
-function mark(key){mission=markMission(mission,key);message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);render();void persist();}
-function raiseAlarm(value){alarm=Math.min(100,alarm+value);render();void persist();}
+async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm,live,introSeen});}
+function mark(key){
+  mission=markMission(mission,key);
+  if(key==='lockOpen'){world[11][14]='D';message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
+  else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
+  render();void persist();
+}
+function syncGuards(){for(const guard of guardEntities(live)){const entity=entities.find(e=>e.id===guard.id);if(entity)Object.assign(entity,guard);}}
+function resetAttempt(){
+  live=releaseAfterCheckpoint(live);alarm=live.alarm.value;player={...START_POSITION};
+  discover(world,seen,player.row,player.col,3);syncGuards();route=[];
+  message('Тревога достигла предела! Герой вернулся к контрольной точке. Пройденные задания сохранены.');
+  render();void persist();
+}
+function raiseAlarm(value){
+  live={...live,alarm:changeAlarm(live.alarm,value)};alarm=live.alarm.value;
+  if(alarm>=100){resetAttempt();return;}
+  render();void persist();
+}
 function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
   const target=nearestInteraction(player,world,entities);
   if(!target){message('Рядом нет объекта. Исследуй карту или используй меню справа.');return;}
-  if(target.kind==='npc'){message(target.role==='mentor'?'Арман: «Начни с учебных задач, потом планируй путь».':`${target.name}: «Будь внимателен к условиям задания».`);return;}
+  if(target.kind==='npc'){
+    if(target.id==='arman')message('АРМАН: «Ерасыл, у каждой двери своё правило. Начни с программирования. Потом изучи карту — и найди доказательства в архиве».');
+    else if(target.id==='ruslan')message('РУСЛАН: «Я видел несоответствия в досье. Камеры могут показать больше, чем ты думаешь».');
+    else message(target.name+': «Здесь за каждым шагом наблюдают виртуальные датчики. Будь внимателен».');
+    return;
+  }
   const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
   panels.open(mapping[target.kind]);
 }
@@ -47,10 +73,15 @@ function move(direction){const outcome=attemptMove(player,direction,world,entiti
   if(!outcome.moved){message(outcome.reason);return;}
   player=outcome.player;
   discover(world,seen,player.row,player.col,3);
+  const simulation=advanceLiveWorld(live,player,world);
+  live=simulation.state;alarm=live.alarm.value;
+  syncGuards();
+  if(simulation.caught){resetAttempt();return;}
   if(world[player.row][player.col]==='E'){
     if(canFinish(mission)){mark('finished');panels.open('success');}
     else message('Выход найден! Сначала выполни учебные контрольные точки.');
-  }else message(`${zoneAt(player.row,player.col)} · клетка (${player.row},${player.col}) · нажми E рядом с объектом.`);
+  }else if(simulation.events.length){message(simulation.events.map(e=>e.description).join(' · ')+' · Тревога '+alarm+'/100');}
+  else message(zoneAt(player.row,player.col)+' · клетка ('+player.row+','+player.col+') · нажми E рядом с объектом.');
   route=[];render();void persist();
 }
 async function init(){
@@ -61,8 +92,13 @@ async function init(){
     if(Array.isArray(previous.seen))seen=new Set(previous.seen.filter(x=>typeof x==='string'));
     mission={...DEFAULT_MISSION,...previous.mission};
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
+    live=restoreLiveWorld(previous.live);
+    live={...live,alarm:changeAlarm(live.alarm,alarm-live.alarm.value)};
+    introSeen=Boolean(previous.introSeen);
+    if(mission.lockOpen)world[11][14]='D';
   }
   discover(world,seen,player.row,player.col,3);
+  syncGuards();
   let manifest=null;
   try{const loaded=await loadAssetManifest();manifest=loaded.manifest;
     assets.images=loaded.images;assets.manifest=manifest;
@@ -91,7 +127,11 @@ async function init(){
     },
     setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
   });
-  $('play-btn').addEventListener('click',()=>{show($('game-screen'));render();message('Глава 1: используй WASD, E, M. Быстрые задания доступны справа.');});
+  $('play-btn').addEventListener('click',()=>{
+    show($('game-screen'));render();
+    message('Глава 1: QAMAL-01. Исследуй помещения, поговори с Арманом, пройди контрольные точки.');
+    if(!introSeen){introSeen=true;void panels.open('intro');void persist();}
+  });
   $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
   $('exit-btn').addEventListener('click',()=>show($('main-menu')));
@@ -111,6 +151,6 @@ async function init(){
   });
   render();
   message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live)};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
