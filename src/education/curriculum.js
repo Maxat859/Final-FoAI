@@ -217,5 +217,5 @@ export function diagnoseLessonError(question,answer,attempt=1){
   else if(expected.startsWith('if')&&(value.includes(':')!==expected.includes(':')))issue='Python завершает условие двоеточием, Go открывает блок фигурной скобкой.';
   else if(expected.includes('[')&&/\[\d+\]/.test(expected))issue='Проверь индекс: первый элемент массива или списка имеет номер 0.';
   else if(expected.includes('range')&&value.includes('range'))issue='Убедись, что range(n) не включает n и у заголовка есть двоеточие.';
-  return {correct:false,title:attempt>=2?'Разбор ошибки':'Проверим ещё раз',message:issue,steps:question.steps,answer:expected,reveal:attempt>=2};
+  return {correct:false,title:attempt>=2?'Разбор ошибки':'Ошибка — проверим решение',message:issue,steps:question.steps,answer:expected,reveal:attempt>=2};
 }
