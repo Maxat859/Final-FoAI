@@ -1,4 +1,4 @@
-import {getCourse,lessonAt,diagnoseLessonError} from '../education/curriculum.js';
+import {getCourse,lessonAt,diagnoseLessonError,isCorrectLessonAnswer} from '../education/curriculum.js';
 import {checkAnswer} from '../education/questionChecker.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const label={python:'Python',go:'Go'};
@@ -109,7 +109,7 @@ export function createLearningUI(inner,handlers){
   function check(){
     const q=lesson().tasks[taskIndex],answer=inner.querySelector('#learn-answer')?.value??'';
     if(!String(answer).trim()){showAnalysis(q,answer);return;}
-    const result=checkAnswer(q,answer);
+    const result={correct:isCorrectLessonAnswer(q,answer)};
     if(result.correct){
       attempts=0;answered=true;
       const next=taskIndex+1;
@@ -137,7 +137,7 @@ export function createLearningUI(inner,handlers){
   }
   function explain(){
     const q=lesson().tasks[taskIndex],answer=inner.querySelector('#learn-answer')?.value??'';
-    if(String(answer).trim()&&!checkAnswer(q,answer).correct){
+    if(String(answer).trim()&&!isCorrectLessonAnswer(q,answer)){
       handlers.recordMistake?.({language,topic:lesson().title,location:heading(),codeSnippet:q.codeSnippet,
         answer,expected:q.expectedAnswer,steps:q.steps});
     }
