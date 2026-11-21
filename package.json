@@ -1,11 +1,12 @@
 {
-  "name": "qamal-prison-break-frontend",
-  "version": "0.4.0",
+  "name": "qamal-prison-break-integration",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "check": "node --check src/main.js && node --test tests/*.test.js",
-    "start": "python3 -m http.server 3000"
+    "start": "python3 -m http.server 3000",
+    "demo:p2": "node scripts/demo-participant2.js"
   }
 }
