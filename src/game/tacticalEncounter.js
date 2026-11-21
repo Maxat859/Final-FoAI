@@ -18,6 +18,7 @@ export function createEncounter({
     guardPosition,
     playerPosition,
     turn,
+    currentPlayer: turn,
     turnsPlayed: 0,
     maxTurns,
     status: "active"
