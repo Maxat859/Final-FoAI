@@ -43,8 +43,18 @@ export function createPanels(dialog,handlers){
   async function open(name,data=null){active=name;dialog.hidden=false;dialog.classList.toggle('npc-open',name==='npc');inner.scrollTop=0;
     if(name==='door'){selectedDoor=data;doorAttempt=0;doorLanguage=handlers.language();await ensureExtraBank();drawDoor();}
     if(name==='npc'){npcScript=getNpcScript(data);npcIndex=0;renderNpc();}
+    if(name==='wake')inner.innerHTML=shell('ГЛАВА 01 — ПРОБУЖДЕНИЕ',
+      '<div class="wake-scene">'+
+      '<div class="wake-portrait"><img src="./assets/portraits/erasyl.svg" alt="Ерасыл просыпается"></div>'+
+      '<div class="scene-number">06:30 / ТЮРЕМНЫЙ КОРПУС / КАМЕРА 01</div>'+
+      '<h3>Шум металлической решётки.</h3>'+
+      '<p>Ерасыл проснулся на нижней койке. Холодный бетон, мерцающая лампа и шаги за дверью. Рядом — раковина, шкафчик и тюремный санузел.</p>'+
+      '<p>На дверях стоят учебные терминалы. Решай задания на Python или Go, чтобы открыть доступ к другим помещениям.</p>'+
+      '<p class="wake-hint">WASD — идти · E — открыть дверь / поговорить · M — карта · на лестнице E — сменить этаж</p>'+
+      '<button data-close class="wake-start">ВСТАТЬ С КОЙКИ И НАЧАТЬ →</button>'+
+      '</div>', 'STORY / CELL 01');
     if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники двигаются после твоих ходов. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
-    if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Быстрые кнопки справа открывают учебные демо-окна без необходимости искать комнату.</p>`);
+    if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Двери отмечены 1/2/3 звёздами по сложности. На лестнице U или N нажми E для перехода между этажами. Левое и правое крыло, второй этаж, архив, столовая, медпункт и камеры постепенно открываются по мере исследования.</p>`);
     if(name==='code'){await ensureExtraBank();drawCode();}
     if(name==='bayes')drawBayes();
     if(name==='map')drawMap();
