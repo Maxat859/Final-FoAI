@@ -19,7 +19,7 @@ test('new QAMAL level is 48x32 and preserves the original checkpoints',()=>{
 
 test('new wings are connected: exit reachable without crossing walls',()=>{
   const world=createLevel();
-  const blocked=new Set(['#','B','b','d','t','c']);
+  const blocked=BLOCKED_TILES;
   const grid=world.map(row=>row.map(x=>blocked.has(x)?'#':x).join(''));
   const route=findPath({grid,start:START_POSITION,goal:EXIT_POSITION,algorithm:'A*'});
   assert.equal(route.found,true);
