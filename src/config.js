@@ -72,6 +72,9 @@ export function createLevel(){
 export const DEFAULT_ENTITIES=Object.freeze([
   {id:'arman',row:3,col:6,spriteId:ASSET_IDS.prisoner,name:'Арман',role:'mentor'},
   {id:'ruslan',row:16,col:7,spriteId:ASSET_IDS.prisoner,name:'Руслан',role:'npc'},
+  {id:'daniyar',row:5,col:16,spriteId:ASSET_IDS.prisoner,name:'Данияр',role:'technician'},
+  {id:'madina',row:16,col:9,spriteId:ASSET_IDS.prisoner,name:'Мадина',role:'analyst'},
+  {id:'timur',row:22,col:19,spriteId:ASSET_IDS.prisoner,name:'Тимур',role:'witness'},
   {id:'guard1',row:10,col:21,spriteId:ASSET_IDS.guard,name:'Охранник',role:'guard'},
   {id:'guard2',row:5,col:25,spriteId:ASSET_IDS.senior,name:'Старший охранник',role:'guard'}
 ]);
