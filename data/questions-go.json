@@ -1,0 +1,60 @@
+[
+  {
+    "id": "GO-01",
+    "language": "go",
+    "difficulty": "easy",
+    "type": "multiple_choice",
+    "prompt": "Какая команда печатает текст в Go (с импортом fmt)?",
+    "choices": {
+      "A": "printline('QAMAL')",
+      "B": "fmt.Println(\"QAMAL\")",
+      "C": "console.log('QAMAL')",
+      "D": "echo QAMAL"
+    },
+    "answer": "B",
+    "hint": "В Go часто используют пакет fmt.",
+    "explanation": "fmt.Println печатает значение и перевод строки."
+  },
+  {
+    "id": "GO-02",
+    "language": "go",
+    "difficulty": "medium",
+    "type": "short_text",
+    "prompt": "Сколько элементов у []int{4, 5, 6, 7}? Введите число.",
+    "answer": "4",
+    "hint": "Посчитайте значения в срезе.",
+    "explanation": "len() вернёт 4."
+  },
+  {
+    "id": "GO-03",
+    "language": "go",
+    "difficulty": "medium",
+    "type": "multiple_choice",
+    "prompt": "Какой цикл в Go выполнится ровно три раза?",
+    "choices": {
+      "A": "for i := 0; i < 3; i++ { }",
+      "B": "for i := 1; i < 3; i++ { }",
+      "C": "for i := 0; i <= 3; i++ { }",
+      "D": "repeat 3 times { }"
+    },
+    "answer": "A",
+    "hint": "Нужно пройти значения 0, 1 и 2.",
+    "explanation": "Условие i < 3 исключает 3, поэтому три повторения."
+  },
+  {
+    "id": "GO-04",
+    "language": "go",
+    "difficulty": "hard",
+    "type": "multiple_choice",
+    "prompt": "Как внутри функции Go коротко объявить x равным 10?",
+    "choices": {
+      "A": "let x = 10",
+      "B": "x := 10",
+      "C": "int x = 10",
+      "D": "x ::= 10"
+    },
+    "answer": "B",
+    "hint": "Короткое объявление использует двоеточие и знак равенства.",
+    "explanation": "Оператор := объявляет новую переменную с выводом типа."
+  }
+]

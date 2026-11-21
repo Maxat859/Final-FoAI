@@ -1,0 +1,857 @@
+{
+  "version": "1.0",
+  "seed": 2026,
+  "features": [
+    "warningsCount",
+    "restrictedVisits",
+    "ruleViolations",
+    "alertLevel"
+  ],
+  "classes": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
+  "samples": [
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 32,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 35,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 28,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 5,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 6,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 31,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 25,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 22,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 21,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 18,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 19,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 23,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 5,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 7,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 25,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 30,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 8,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 27,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 30,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 29,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 35,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 35,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 27,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 17,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 9,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 23,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 31,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 27,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 20,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 28,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 11,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 4,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 23,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 26,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 0,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 28,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 15,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 0,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 34,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 0,
+      "alertLevel": 9,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 0,
+      "ruleViolations": 0,
+      "alertLevel": 38,
+      "label": "LOW"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 52,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 65,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 37,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 64,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 51,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 51,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 65,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 36,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 64,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 45,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 45,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 53,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 53,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 54,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 56,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 36,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 36,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 49,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 57,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 55,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 40,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 43,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 62,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 40,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 49,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 49,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 49,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 61,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 35,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 48,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 65,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 2,
+      "ruleViolations": 1,
+      "alertLevel": 46,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 38,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 52,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 53,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 56,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 60,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 1,
+      "ruleViolations": 2,
+      "alertLevel": 40,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 1,
+      "restrictedVisits": 3,
+      "ruleViolations": 1,
+      "alertLevel": 59,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 2,
+      "restrictedVisits": 1,
+      "ruleViolations": 1,
+      "alertLevel": 45,
+      "label": "MEDIUM"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 69,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 3,
+      "alertLevel": 81,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 91,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 5,
+      "ruleViolations": 2,
+      "alertLevel": 68,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 84,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 2,
+      "ruleViolations": 4,
+      "alertLevel": 85,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 2,
+      "ruleViolations": 5,
+      "alertLevel": 85,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 5,
+      "ruleViolations": 5,
+      "alertLevel": 72,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 5,
+      "alertLevel": 83,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 2,
+      "ruleViolations": 5,
+      "alertLevel": 66,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 72,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 5,
+      "ruleViolations": 4,
+      "alertLevel": 66,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 72,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 67,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 66,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 3,
+      "ruleViolations": 4,
+      "alertLevel": 91,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 5,
+      "ruleViolations": 3,
+      "alertLevel": 91,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 3,
+      "ruleViolations": 3,
+      "alertLevel": 99,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 5,
+      "ruleViolations": 4,
+      "alertLevel": 74,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 82,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 5,
+      "ruleViolations": 4,
+      "alertLevel": 85,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 2,
+      "ruleViolations": 3,
+      "alertLevel": 100,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 98,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 2,
+      "ruleViolations": 2,
+      "alertLevel": 80,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 2,
+      "ruleViolations": 3,
+      "alertLevel": 97,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 5,
+      "ruleViolations": 4,
+      "alertLevel": 79,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 3,
+      "alertLevel": 88,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 5,
+      "ruleViolations": 5,
+      "alertLevel": 100,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 4,
+      "ruleViolations": 3,
+      "alertLevel": 75,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 3,
+      "ruleViolations": 5,
+      "alertLevel": 65,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 5,
+      "ruleViolations": 2,
+      "alertLevel": 76,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 3,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 99,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 66,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 4,
+      "ruleViolations": 2,
+      "alertLevel": 90,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 6,
+      "restrictedVisits": 3,
+      "ruleViolations": 2,
+      "alertLevel": 70,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 5,
+      "ruleViolations": 4,
+      "alertLevel": 100,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 2,
+      "alertLevel": 77,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 4,
+      "ruleViolations": 4,
+      "alertLevel": 99,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 5,
+      "restrictedVisits": 4,
+      "ruleViolations": 3,
+      "alertLevel": 89,
+      "label": "HIGH"
+    },
+    {
+      "warningsCount": 4,
+      "restrictedVisits": 3,
+      "ruleViolations": 3,
+      "alertLevel": 82,
+      "label": "HIGH"
+    }
+  ]
+}
