@@ -55,13 +55,17 @@ export function attemptMove(player,direction,world,entities=[]){
   if(entities.some(e=>e.row===row&&e.col===col))return {moved:false,reason:'На этой клетке находится персонаж. Нажми E рядом с ним.'};
   return {moved:true,player:{...player,row,col,facing,steps:player.steps+1}};
 }
-export function nearestInteraction(player,world,entities=[]){
-  const targets=[
+export function nearestInteraction(player,world,entities=[],floor=1){
+  const targets=floor===2?[
+    {row:11,col:9,kind:'library',name:'Библиотека'},
+    {row:10,col:6,kind:'library',name:'Книжные стеллажи'},
+    {row:12,col:6,kind:'library',name:'Учебные книги'}
+  ]:[
     {row:4,col:16,kind:'classroom',name:'Учебный класс'},
     {row:11,col:26,kind:'lock',name:'Кодовый терминал'},
     {row:3,col:25,kind:'cctv',name:'Пост CCTV'},
-    {row:16,col:18,kind:'dossier',name:'Архив досье'},
-    ...entities.map(e=>({...e,kind:'npc'}))
+    {row:16,col:18,kind:'dossier',name:'Архив досье'}
   ];
+  targets.push(...entities.map(e=>({...e,kind:'npc'})));
   return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||null;
 }

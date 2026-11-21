@@ -3,6 +3,7 @@ import {createEncounter,chooseEncounterAction,applyEncounterMove,ENCOUNTER_ACTIO
 import {selectQuestion,questionsFor} from '../education/questionBank.js';
 import {DIFFICULTY_LABEL} from '../game/doorChallenges.js';
 import {checkAnswer} from '../education/questionChecker.js';
+import {createLearningUI} from './learningUI.js';
 const codeBank={
   python:[{q:'Что выводит print(len("QAMAL"))?',options:['4','5','6','Ошибка'],correct:1,why:'len() возвращает количество символов — 5.'},{q:'Что делает range(3)?',options:['0, 1, 2','1, 2, 3','0, 1, 2, 3','Ошибка'],correct:0,why:'Верхняя граница range не включается.'}],
   go:[{q:'Что напечатает fmt.Println(2 + 3)?',options:['23','5','Ошибка','0'],correct:1,why:'Складываются два целых числа.'},{q:'Чему равна длина []int{1,2,3}?',options:['2','3','4','0'],correct:1,why:'len() возвращает 3 элемента.'}]
@@ -14,7 +15,28 @@ export function createPanels(dialog,handlers){
   let codeIndex=0, currentQuestion=null;
   let encounter=null,encounterSummary='';
   let selectedDoor=null,doorAttempt=0,doorLanguage='python',doorQuestion=null;
-  let npcScript=[],npcIndex=0,npcTimer=null,npcFullyTyped=false;
+  let npcScript=[],npcIndex=0,npcTimer=null,npcFullyTyped=false,npcId=null;
+  const learningUI=createLearningUI(inner,handlers);
+  const failures=new Map();
+  function mistakeKey(q,context){return context+':'+(q?.id||q?.title||'question');}
+  function recordQuestionError(q,answer,context){
+    handlers.recordMistake?.({language:q.language||handlers.language(),topic:q.title||'Программирование',
+      location:context,codeSnippet:q.codeSnippet||'',answer:String(answer),
+      expected:String(q.expectedAnswer??''),explanation:q.explanation||'',
+      steps:[
+        'Найди переменные, типы данных и начальные значения.',
+        'Выполни по очереди каждую строку, отмечая изменения.',
+        q.explanation||q.hint||'Сравни полученное значение с возможными ответами.'
+      ]});
+  }
+  function questionReview(q,answer,showAnswer=false){
+    const a='<strong>Разбор задания</strong><ol><li>Определи значения переменных и порядок действий.</li>'+
+      '<li>Пройди каждую строку и каждую итерацию по очереди.</li>'+
+      '<li>'+esc(q.explanation||q.hint||'Проверь вычисления и индексы.')+'</li></ol>';
+    return a+(showAnswer?'<p><strong>Верный ответ:</strong> <code>'+esc(q.expectedAnswer)+'</code></p>'+
+      '<p>Сравни с твоим ответом: <code>'+esc(answer||'—')+'</code>. Попробуй исправить и проверить ещё раз.</p>':
+      '<p>Попробуй ещё раз. Если не получится, нажми «Разобрать».</p>');
+  }
   let practiceDifficulty='easy',practiceIndex=0;
   let externalBank=[],extraLoaded=false;
   async function ensureExtraBank(){
@@ -39,10 +61,14 @@ export function createPanels(dialog,handlers){
   }
 
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
-  function close(){if(npcTimer)clearInterval(npcTimer);npcTimer=null;dialog.classList.remove('npc-open');dialog.hidden=true;active=null;}
+  function close(){if(npcTimer)clearInterval(npcTimer);npcTimer=null;learningUI.close();dialog.classList.remove('npc-open');dialog.hidden=true;active=null;}
   async function open(name,data=null){active=name;dialog.hidden=false;dialog.classList.toggle('npc-open',name==='npc');inner.scrollTop=0;
     if(name==='door'){selectedDoor=data;doorAttempt=0;doorLanguage=handlers.language();await ensureExtraBank();drawDoor();}
-    if(name==='npc'){npcScript=getNpcScript(data);npcIndex=0;renderNpc();}
+    if(name==='npc'){npcId=data?.id??null;npcScript=getNpcScript(data);npcIndex=0;renderNpc();}
+    if(['classroom','library','mentor'].includes(name))learningUI.open(name,{language:handlers.language()});
+    if(name==='guard-arrival')inner.innerHTML=shell('ПРИКАЗ / УЧЕБНЫЙ КЛАСС',
+      '<div class="guard-story"><img src="./assets/portraits/guard.svg" alt="Портрет охранника">'+
+      '<div><h3>Охранник у камеры</h3><p>«Ерасыл, подъём. Сегодня ты идёшь на учебное занятие. Выбрал Python или Go? Я провожу тебя до класса. На маршруте двери открою служебным пропуском.»</p>'+      '<p class="panel-note">Следуй за охранником. Камера покажет весь путь до учебной комнаты.</p></div></div>'+      '<button id="escort-start" class="learning-main-button">ИДТИ С ОХРАННИКОМ →</button>',      'STORY / ESCORT');
     if(name==='wake')inner.innerHTML=shell('ГЛАВА 01 — ПРОБУЖДЕНИЕ',
       '<div class="wake-scene">'+
       '<div class="wake-portrait"><img src="./assets/portraits/erasyl.svg" alt="Ерасыл просыпается"></div>'+
@@ -51,7 +77,7 @@ export function createPanels(dialog,handlers){
       '<p>Ерасыл проснулся на нижней койке. Холодный бетон, мерцающая лампа и шаги за дверью. Рядом — раковина, шкафчик и тюремный санузел.</p>'+
       '<p>На дверях стоят учебные терминалы. Решай задания на Python или Go, чтобы открыть доступ к другим помещениям.</p>'+
       '<p class="wake-hint">WASD — идти · E — открыть дверь / поговорить · M — карта · на лестнице E — сменить этаж</p>'+
-      '<button data-close class="wake-start">ВСТАТЬ С КОЙКИ И НАЧАТЬ →</button>'+
+      '<button id="wake-start" class="wake-start">ВСТАТЬ С КОЙКИ И НАЧАТЬ →</button>'+
       '</div>', 'STORY / CELL 01');
     if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники двигаются после твоих ходов. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
     if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Двери отмечены 1/2/3 звёздами по сложности. На лестнице U или N нажми E для перехода между этажами. Левое и правое крыло, второй этаж, архив, столовая, медпункт и камеры постепенно открываются по мере исследования.</p>`);
@@ -65,7 +91,7 @@ export function createPanels(dialog,handlers){
     if(name==='lab')handlers.lab.render();
     if(name==='tactical'){encounter=createEncounter({guardPosition:0,playerPosition:5,maxTurns:10});encounterSummary='В этой мини-игре настоящий Minimax выбирает решение охранника.';drawTactical();}
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
-    if(name!=='door'&&name!=='npc')dialog.querySelector('[data-close]')?.focus();
+    if(name!=='door'&&name!=='npc'&&name!=='classroom'&&name!=='library'&&name!=='mentor')dialog.querySelector('[data-close]')?.focus();
   }
   function drawCode(){
     const language=handlers.language(),questions=availableQuestions(language,practiceDifficulty);
@@ -83,7 +109,7 @@ export function createPanels(dialog,handlers){
       '<span class="difficulty-badge">'+language.toUpperCase()+' · '+questions.length+' задач на уровне</span></div>'+
       '<h3>'+esc(q.title||'Задание по программированию')+'</h3><p>'+esc(q.prompt)+'</p>'+
       '<pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+answers+
-      '<div class="quest-actions"><button id="code-check">ПРОВЕРИТЬ</button><button id="practice-next">ДРУГОЙ ВОПРОС →</button></div>'+
+      '<div class="quest-actions"><button id="code-check">ПРОВЕРИТЬ</button><button id="code-explain">РАЗОБРАТЬ ОШИБКУ</button><button id="practice-next">ДРУГОЙ ВОПРОС →</button></div>'+
       '<div id="code-feedback" class="panel-feedback" role="status"></div>',
       'LEARN / PYTHON + GO');
   }
@@ -129,7 +155,7 @@ export function createPanels(dialog,handlers){
       '<div class="quest-topline"><span class="difficulty-badge">'+doorLanguage.toUpperCase()+' / '+
       esc(q.title||'Задача '+selectedDoor.difficulty)+'</span><span class="quest-number">ЗАДАНИЕ #'+(doorAttempt+1)+'</span></div>'+
       '<h3>'+esc(q.prompt)+'</h3><pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+answers+
-      '<div class="quest-actions"><button id="door-check">ПРОВЕРИТЬ И ОТКРЫТЬ</button><button id="door-next">ДРУГОЕ ЗАДАНИЕ</button></div>'+
+      '<div class="quest-actions"><button id="door-check">ПРОВЕРИТЬ И ОТКРЫТЬ</button><button id="door-explain">НЕ МОГУ РЕШИТЬ — РАЗОБРАТЬ</button><button id="door-next">ДРУГОЕ ЗАДАНИЕ</button></div>'+
       '<div class="panel-feedback" id="door-feedback" role="status">Подсказка: '+esc(q.hint)+'</div>',
       'QAMAL / DOOR CHALLENGE');
     inner.querySelector('#door-answer')?.focus();
@@ -141,7 +167,8 @@ export function createPanels(dialog,handlers){
         ['Арман','Ерасыл! Я надеялся, что ты меня услышишь. Твой файл в системе выглядит подозрительно.'],
         ['Ерасыл','Кто-то изменил моё досье? Как мне это проверить?'],
         ['Арман','Ищи жёлтые значки на дверях. Подойди и нажми E: каждая дверь проверяет код на Python или Go.'],
-        ['Арман','Начни с лёгких заданий, затем иди к комнате камер. Нажми M, чтобы видеть уже изученную территорию.']
+        ['Арман','Я могу лично учить тебя основам Python и Go. Выбирай тему, решай задачи, и мы разберём ошибки по шагам.'],
+        ['Арман','На втором этаже есть библиотека: там можно заниматься самостоятельно и повторять свои ошибки.']
       ],
       ruslan:[
         ['Руслан','Тихо, Ерасыл. Здесь постоянно меняются данные наблюдений.'],
@@ -193,7 +220,7 @@ export function createPanels(dialog,handlers){
       '<div class="npc-dialog-content"><div class="npc-speaker">'+esc(speaker)+'</div>'+
       '<div class="npc-words" id="npc-words" role="status"></div>'+
       '<div class="npc-footer"><span>ДИАЛОГ '+(npcIndex+1)+'/'+npcScript.length+' · E / ENTER — ДАЛЕЕ</span>'+
-      '<button id="npc-next">'+(npcIndex+1<npcScript.length?'ДАЛЕЕ →':'ЗАКРЫТЬ ✓')+'</button></div></div></div>';
+      '<button id="npc-next">'+(npcIndex+1<npcScript.length?'ДАЛЕЕ →':'ЗАКРЫТЬ ✓')+'</button>'+      (npcId==='arman'?'<button id="mentor-open" class="mentor-dialog-button">УЧИТЬСЯ С АРМАНОМ 📚</button>':'')+      '</div></div></div>';
     const el=inner.querySelector('#npc-words');
     let length=0;
     npcTimer=setInterval(()=>{
@@ -225,14 +252,23 @@ export function createPanels(dialog,handlers){
     if(e.target.id==='practice-difficulty'){practiceDifficulty=e.target.value;practiceIndex=0;drawCode();}
   });
   dialog.addEventListener('click',async e=>{
+    if(e.target.id==='wake-start'){close();handlers.onWake?.();return;}
+    if(e.target.id==='escort-start'){close();handlers.onEscortStart?.();return;}
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
     const id=e.target.id;
     if(e.target.dataset.camera){const cam=e.target.dataset.camera;handlers.drawCamera(inner.querySelector('#camera-preview'),cam);inner.querySelector('#camera-status').textContent=`${cam} / ВИРТУАЛЬНАЯ КАМЕРА`;return;}
     if(id==='npc-next'){advanceNpc();return;}
+    if(id==='mentor-open'){close();await open('mentor');return;}
     if(e.target.dataset.doorLanguage){
       doorLanguage=e.target.dataset.doorLanguage;doorAttempt=0;drawDoor();return;
     }
     if(id==='door-next'){doorAttempt++;drawDoor();return;}
+    if(id==='door-explain'&&doorQuestion){
+      inner.querySelector('#door-feedback').innerHTML=questionReview(doorQuestion,'',true);return;
+    }
+    if(id==='code-explain'&&currentQuestion){
+      inner.querySelector('#code-feedback').innerHTML=questionReview(currentQuestion,'',true);return;
+    }
     if(id==='door-check'){
       if(!doorQuestion)return;
       const answer=inner.querySelector('[name=door-option]:checked')?.value??inner.querySelector('#door-answer')?.value;
@@ -248,8 +284,11 @@ export function createPanels(dialog,handlers){
           '<button data-close>ПРОДОЛЖИТЬ ИГРУ →</button>',
           'QAMAL / CHECKPOINT COMPLETE');
       }else{
-        feedback.textContent='Пока неверно. '+doorQuestion.hint+
-          (selectedDoor.difficulty==='easy'?' В лёгком секторе нет штрафа тревоги.':' Сигнал контрольной точки немного повысил тревогу.');
+        const key=mistakeKey(doorQuestion,'door'),attempt=(failures.get(key)||0)+1;
+        failures.set(key,attempt);recordQuestionError(doorQuestion,answer,'Дверь '+selectedDoor.id);
+        feedback.innerHTML='<p>Неправильный ответ — разберём, почему.</p>'+
+          questionReview(doorQuestion,answer,attempt>=2)+
+          (selectedDoor.difficulty==='easy'?'<p>В лёгком секторе нет штрафа тревоги.</p>':'<p>Сигнал контрольной точки немного повысил тревогу.</p>');
         if(selectedDoor.difficulty!=='easy')handlers.raiseAlarm(selectedDoor.difficulty==='medium'?5:8);
       }
       return;
@@ -259,8 +298,14 @@ export function createPanels(dialog,handlers){
       const answer=inner.querySelector('[name=practice-option]:checked')?.value??inner.querySelector('#code-free-answer')?.value;
       if(!answer?.trim()){feedback.textContent='Сначала введи ответ.';return;}
       const result=checkAnswer(currentQuestion,answer);
-      feedback.textContent=result.feedback;
-      if(result.correct)handlers.mark('learned');
+      if(result.correct){
+        feedback.innerHTML='<p>'+esc(result.feedback)+'</p>';
+        handlers.mark('learned');
+      }else{
+        const key=mistakeKey(currentQuestion,'practice'),attempt=(failures.get(key)||0)+1;
+        failures.set(key,attempt);recordQuestionError(currentQuestion,answer,'Тренировочный терминал');
+        feedback.innerHTML=questionReview(currentQuestion,answer,attempt>=2);
+      }
       return;
     }
     if(id==='practice-next'){practiceIndex++;drawCode();return;}
