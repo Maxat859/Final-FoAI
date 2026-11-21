@@ -18,7 +18,7 @@ const INITIAL_GUARDS = [
     patrolRoute: [{x:25,y:5},{x:26,y:5},{x:26,y:6},{x:22,y:6},{x:22,y:5}]
   },
   {id:"guard3",floor:2,x:31,y:12,detectionRadius:4,patrolRoute:[{x:31,y:12},{x:35,y:12},{x:35,y:15},{x:31,y:15}]},
-  {id:"guard4",floor:2,x:43,y:19,detectionRadius:4,patrolRoute:[{x:43,y:19},{x:45,y:19},{x:45,y:23},{x:42,y:23}]}
+  {id:"guard4",floor:2,x:42,y:19,detectionRadius:4,patrolRoute:[{x:43,y:19},{x:45,y:19},{x:45,y:23},{x:42,y:23}]}
 ];
 
 const CAMERAS = [
