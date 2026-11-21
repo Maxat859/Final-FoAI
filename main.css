@@ -249,3 +249,20 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
 .npc-footer button{background:#d1aa69!important;color:#131f2b!important;font-weight:900;padding:12px 20px!important;white-space:nowrap}
 @media(max-width:850px){.hud-guard{display:none}.world-action-prompt{bottom:136px}.game-touch-controls{bottom:155px}}
 @media(max-width:620px){.world-hud-top{padding:10px 9px 0}.hud-game-logo{min-width:100px;padding:9px}.hud-game-logo small{font-size:8px}.hud-alert{min-width:91px;padding:7px}.hud-pills{gap:4px}.hud-icon-btn{min-width:36px;min-height:39px}.world-toast{top:69px;left:8px;font-size:10px;max-width:80vw}.world-hud-bottom{left:8px;right:8px;bottom:8px;flex-wrap:wrap;gap:8px}.world-objective{flex:1 1 100%;padding:8px 10px}.world-action-buttons{width:100%}.world-action-buttons button{flex:1;padding:10px 4px;font-size:10px;min-height:42px}.world-action-prompt{bottom:145px;font-size:10px;padding:8px 10px}.game-touch-controls{right:8px;bottom:204px}.game-touch-controls button{min-width:34px;min-height:34px}.npc-dialog{gap:9px;padding:10px}.npc-portrait{flex-basis:83px;width:83px;height:104px}.npc-words{min-height:58px;font-size:13px}.npc-footer span{font-size:8px}.npc-footer button{font-size:9px;padding:7px!important}.dialog-backdrop.npc-open .dialog-card{min-height:140px;max-height:48dvh}.quest-code{padding:10px;max-height:25dvh}.dialog-card{padding:16px}}
+
+
+/* Cinematic dialogue: the face appears ABOVE the text, as requested. */
+.dialog-backdrop.npc-open .dialog-card{max-height:69dvh;width:min(840px,calc(100vw - 22px))}
+.npc-dialog{display:flex;flex-direction:column;text-align:center;align-items:stretch;gap:7px;padding:13px 20px 16px}
+.npc-portrait{flex:0 0 128px;width:128px;height:128px;align-self:center}
+.npc-portrait img{width:230px;height:230px;top:-21px}
+.npc-dialog-content{width:100%}
+.npc-speaker{font-size:clamp(16px,2.2vw,22px)}
+.npc-words{font-size:clamp(14px,1.7vw,19px);min-height:55px;padding:3px 12px;text-align:center}
+@media(max-width:620px){
+ .dialog-backdrop.npc-open .dialog-card{max-height:72dvh}
+ .npc-dialog{padding:9px 10px 13px}
+ .npc-portrait{width:96px;height:100px;flex:0 0 100px}
+ .npc-portrait img{width:180px;height:180px;top:-15px}
+ .npc-words{font-size:13px;min-height:50px}
+}
