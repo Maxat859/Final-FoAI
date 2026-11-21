@@ -15,7 +15,7 @@ export function createPanels(dialog,handlers){
   let questionBank=null,activeDoor=null,doorLanguage='python',doorAnswered=false,doorQuestion=null;
   let codeDifficulty='easy';
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
-  function close(){dialog.hidden=true;active=null;}
+  function close(){dialog.hidden=true;active=null;document.getElementById('game-canvas')?.focus?.();}
   async function open(name,payload={}){active=name;dialog.hidden=false;inner.scrollTop=0;
     if(name==='door'){activeDoor=payload.door;doorLanguage=handlers.language();await drawDoor();}
     if(name==='npc'){drawNpc(payload.npc);}
