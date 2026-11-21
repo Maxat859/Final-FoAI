@@ -16,12 +16,12 @@
       <div class="logo">QAMAL<span class="logo-dot">.</span></div>
       <h1>PRISON BREAK</h1>
       <div class="menu-divider"></div>
-      <p class="tagline">Каждая решённая задача открывает новую дверь.</p>
+      <p class="tagline">Два этажа, тюремные камеры, охрана и двери с AI-заданиями.</p>
       <div class="menu-actions">
         <button id="play-btn" class="primary-btn">▶ НАЧАТЬ / ПРОДОЛЖИТЬ ИГРУ</button>
         <button id="settings-btn" class="secondary-btn">⚙ ЯЗЫК ОБУЧЕНИЯ</button>
       </div>
-      <p class="menu-tip">WASD — ходить · E — взаимодействовать · M — карта · Esc — меню</p>
+      <p class="menu-tip">WASD — ходить · E — взаимодействовать и лестницы · M — карта · Esc — меню</p>
     </div>
     <div class="menu-bottom">ГЛАВА 1 / QAMAL-01 <span>PIXEL ART / PYTHON & GO</span></div>
   </section>
@@ -42,7 +42,7 @@
     <div class="world-grain" aria-hidden="true"></div>
 
     <div class="world-hud-top">
-      <div class="hud-game-logo"><strong>QAMAL<span>.</span></strong><small id="zone-name">ЦЕНТРАЛЬНЫЙ КОРИДОР</small></div>
+      <div class="hud-game-logo"><strong>QAMAL<span>.</span></strong><small id="zone-name">КАМЕРА ЕРАСЫЛА</small><span id="floor-indicator" class="hud-floor-indicator">ЭТАЖ 1 / 2</span></div>
       <div class="hud-pills">
         <div class="hud-alert"><span>ТРЕВОГА</span><strong id="alert-value">0 / 100</strong>
           <div class="stat-bar"><span id="alert-fill" class="stat-fill alert"></span></div>
@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <div id="game-message" class="world-toast" role="status" aria-live="polite">Исследуй мир и подходи к дверям.</div>
+    <div id="game-message" class="world-toast" role="status" aria-live="polite">Ты проснулся в камере заключённого. Изучай помещения и находи лестницы.</div>
     <div id="action-prompt" class="world-action-prompt" role="status">WASD — ходьба · E — действие · M — карта</div>
 
     <div class="world-hud-bottom">
