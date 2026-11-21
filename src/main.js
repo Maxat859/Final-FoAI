@@ -87,10 +87,10 @@ function syncGuards(){
     }
   }
 }
-function activateFloor(next){
+function activateFloor(next,withVision=true){
   floor=next;world=worlds[next];entities=entitiesByFloor[next];
   seen=seenByFloor[next];unlockedDoors=unlockedByFloor[next];
-  route=[];updateVision();
+  route=[];if(withVision)updateVision();
 }
 function stairAtPlayer(){
   const tile=world[player.row]?.[player.col];
@@ -170,7 +170,7 @@ async function init(){
       seenByFloor[1]=new Set(validCells(previous.seen));
       unlockedByFloor[1]=new Set(validDoors(previous.unlockedDoors));
     }
-    activateFloor(floor);
+    activateFloor(floor,false);
     if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col)
        &&isPassable(world,previous.player.row,previous.player.col)){
       player={...START_POSITION,...previous.player};
