@@ -293,3 +293,16 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
  .dialog-card:has(#door-check) .quest-code{max-height:17dvh}
  .dialog-card:has(#door-check) .quest-door-title p{display:none}
 }
+
+
+/* V3: cinematic two-level prison adventure */
+.hud-floor-indicator{display:inline-block;margin-top:8px;padding:5px 9px;background:rgba(21,47,62,.86);border:1px solid #a78f65;font:800 10px/1.2 Consolas,monospace;letter-spacing:.1em;color:#f4cf84}
+.wake-scene{background:linear-gradient(155deg,#142d3b,#091722);border:1px solid #566e7f;padding:15px 23px 23px;text-align:center;box-shadow:inset 0 0 60px #0007}
+.wake-portrait{width:132px;height:132px;margin:0 auto 16px;background:#344852;border:4px solid #ad9972;overflow:hidden;box-shadow:6px 6px 0 #06141e}
+.wake-portrait img{width:100%;height:100%;image-rendering:pixelated}
+.wake-scene h3{font-size:clamp(19px,3vw,28px);color:#f3d5a0;margin:12px 0 9px}
+.wake-scene p{max-width:60ch;line-height:1.65;color:#c9dae0;margin:10px auto}
+.wake-scene .wake-hint{background:#1a3544;border:1px solid #527488;color:#f4e4b5;padding:12px 15px;font-size:12px}
+.wake-start{display:inline-block;margin:15px 0 2px;min-height:49px;padding:11px 22px!important;background:#dfb87e!important;border:2px solid #e9d2a2!important;color:#1a2d37!important;font-weight:900!important}
+@media(max-height:680px){.wake-scene{padding:8px 15px}.wake-portrait{width:80px;height:80px;margin-bottom:6px}.wake-scene p{margin:6px auto;font-size:12px}.wake-scene h3{font-size:19px;margin:5px}.wake-scene .wake-hint{padding:7px}.wake-start{margin:7px 0 1px;min-height:39px}}
+@media(max-width:620px){.hud-floor-indicator{margin-top:5px;font-size:8px;padding:3px 6px}.wake-scene{padding:10px}.wake-scene p{font-size:12px}}
