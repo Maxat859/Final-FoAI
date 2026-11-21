@@ -1,7 +1,8 @@
 /* QAMAL: PRISON BREAK — Participant #4 frontend, Pixel Art + Bayes + dossier UI.
    Search/CSP/Minimax/DecisionTree are separate participant modules and never silently faked. */
-import {ASSET_IDS,COLS,DEFAULT_ENTITIES,ROWS,TILE_SIZE,createLevel,zoneAt} from './config.js';
-import {START_POSITION,DIRECTIONS,discover,attemptMove,nearestInteraction} from './game/player.js';
+import {ASSET_IDS,COLS,DEFAULT_ENTITIES,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS,createLevel,zoneAt,isPassable} from './config.js';
+import {START_POSITION,DIRECTIONS,computeFieldOfView,attemptMove,nearestInteraction} from './game/player.js';
+import {getCameraOffset} from './game/camera.js';
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
 import {createStorage} from './storage/indexedDb.js';
 import {loadAssetManifest} from './ui/assetLoader.js';
@@ -20,12 +21,16 @@ const assets={images:new Map(),manifest:null};
 const renderer=createRenderer(canvas,mini,assets);
 const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
 const storage=createStorage();
-let player={...START_POSITION},seen=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
+let player={...START_POSITION},seen=new Set(),visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
 let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
+function updateVision(){
+  visible=computeFieldOfView(world,player.row,player.col);
+  for(const tile of visible)seen.add(tile);
+}
 function render(){
-  renderer.frame({world,player,entities,seen,route,alarm,mission});
+  renderer.frame({world,player,entities,seen,visible,route,alarm,mission});
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
@@ -37,17 +42,17 @@ function render(){
   $('objective').textContent=objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
 }
-async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm,live,introSeen});}
+async function persist(){await storage.set('progress',{mapVersion:2,player,seen:[...seen],mission,alarm,live,introSeen});}
 function mark(key){
   mission=markMission(mission,key);
-  if(key==='lockOpen'){world[11][14]='D';message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
+  if(key==='lockOpen'){world[11][14]='D';updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
   else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
   render();void persist();
 }
 function syncGuards(){for(const guard of guardEntities(live)){const entity=entities.find(e=>e.id===guard.id);if(entity)Object.assign(entity,guard);}}
 function resetAttempt(){
   live=releaseAfterCheckpoint(live);alarm=live.alarm.value;player={...START_POSITION};
-  discover(world,seen,player.row,player.col,3);syncGuards();route=[];
+  updateVision();syncGuards();route=[];
   message('Тревога достигла предела! Герой вернулся к контрольной точке. Пройденные задания сохранены.');
   render();void persist();
 }
@@ -72,7 +77,7 @@ function interact(){
 function move(direction){const outcome=attemptMove(player,direction,world,entities);
   if(!outcome.moved){message(outcome.reason);return;}
   player=outcome.player;
-  discover(world,seen,player.row,player.col,3);
+  updateVision();
   const simulation=advanceLiveWorld(live,player,world);
   live=simulation.state;alarm=live.alarm.value;
   syncGuards();
@@ -88,8 +93,14 @@ async function init(){
   show($('main-menu'));
   const previous=await storage.get('progress',null);
   if(previous){
-    if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col))player={...START_POSITION,...previous.player};
-    if(Array.isArray(previous.seen))seen=new Set(previous.seen.filter(x=>typeof x==='string'));
+    if(Number.isInteger(previous.player?.row)&&Number.isInteger(previous.player?.col)
+       &&isPassable(world,previous.player.row,previous.player.col)){
+      player={...START_POSITION,...previous.player};
+    }
+    // Old saves used a small map and a different discovery algorithm.
+    // Start the new world with genuine line-of-sight, not its obsolete explored cells.
+    if(previous.mapVersion===2 && Array.isArray(previous.seen))
+      seen=new Set(previous.seen.filter(x=>typeof x==='string'&&/^\d+,\d+$/.test(x)));
     mission={...DEFAULT_MISSION,...previous.mission};
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
     live=restoreLiveWorld(previous.live);
@@ -97,7 +108,7 @@ async function init(){
     introSeen=Boolean(previous.introSeen);
     if(mission.lockOpen)world[11][14]='D';
   }
-  discover(world,seen,player.row,player.col,3);
+  updateVision();
   syncGuards();
   let manifest=null;
   try{const loaded=await loadAssetManifest();manifest=loaded.manifest;
@@ -122,7 +133,14 @@ async function init(){
       for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(seen.has(`${r},${c}`)){
         context.fillStyle=world[r][c]==='#'?'#617587':world[r][c]==='E'?'#76c69d':'#2d4858';
         context.fillRect(c*cellW,r*cellH,cellW+1,cellH+1);
+        if(!visible.has(`${r},${c}`)){
+          context.fillStyle='rgba(2,8,16,.65)';
+          context.fillRect(c*cellW,r*cellH,cellW+1,cellH+1);
+        }
       }
+      const camera=getCameraOffset(player,world);
+      context.strokeStyle='#d8ad59';context.lineWidth=1;
+      context.strokeRect(camera.col*cellW+.5,camera.row*cellH+.5,VIEW_COLS*cellW,VIEW_ROWS*cellH);
       context.fillStyle='#f2c76e';context.fillRect(player.col*cellW-2,player.row*cellH-2,6,6);
     },
     setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
@@ -151,6 +169,6 @@ async function init(){
   });
   render();
   message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live)};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
