@@ -21,6 +21,9 @@ try {
 
   await page.keyboard.press('e');
   await page.locator('#door-check').waitFor({state:'visible'});
+  const checkButton=await page.locator('#door-check').boundingBox();
+  assert.ok(checkButton&&checkButton.y>=0&&checkButton.y+checkButton.height<=720,
+    'Door challenge submit button must be visible without scrolling');
   await page.screenshot({path:'/tmp/qamal-door-challenge.png',fullPage:true});
   assert.match(await page.locator('#dialog-inner').innerText(),/ДВЕРЬ/);
 
