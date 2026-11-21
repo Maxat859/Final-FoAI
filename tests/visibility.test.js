@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {COLS,ROWS,VIEW_COLS,VIEW_ROWS,EXIT_POSITION,createLevel,isPassable} from '../src/config.js';
+import {BLOCKED_TILES,COLS,ROWS,VIEW_COLS,VIEW_ROWS,EXIT_POSITION,createLevel,isPassable} from '../src/config.js';
 import {START_POSITION,VISION_RADIUS,computeFieldOfView,discover} from '../src/game/player.js';
 import {getCameraOffset} from '../src/game/camera.js';
 import {findPath} from '../src/algorithms/search.js';
