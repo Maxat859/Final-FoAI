@@ -300,7 +300,7 @@ export function createPanels(dialog,handlers){
       const result=checkAnswer(currentQuestion,answer);
       if(result.correct){
         feedback.innerHTML='<p>'+esc(result.feedback)+'</p>';
-        if(!handlers.getProgress)handlers.mark('learned');
+        handlers.mark('learned');
       }else{
         const key=mistakeKey(currentQuestion,'practice'),attempt=(failures.get(key)||0)+1;
         failures.set(key,attempt);recordQuestionError(currentQuestion,answer,'Тренировочный терминал');
