@@ -145,9 +145,10 @@ async function init(){
     dossiers:dossierUI,lab:labUI,
     language:()=>$('language-select').value,mark,raiseAlarm,unlockDoor,
     portraitFor:(person)=>{
-      const key=person==='guard'?'character.guard.blue':'portrait.'+person;
-      const fallback='assets/characters/prisoners/prisoner.png';
-      return './'+(assets.manifest?.sprites?.[key]||fallback);
+      const named=new Set(['erasyl','arman','ruslan','guard','daniyar','madina','timur']);
+      if(named.has(person))return './assets/portraits/'+person+'.svg';
+      const key='portrait.'+person;
+      return './'+(assets.manifest?.sprites?.[key]||'assets/characters/prisoners/prisoner.png');
     },
     seen:()=>seen,dimensions:()=>({rows:ROWS,cols:COLS}),map:()=>world.map((row,r)=>row.map((tile,c)=>tile==='D'&&!unlockedDoors.has(doorId(r,c))?'#':tile)),
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
