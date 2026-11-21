@@ -46,6 +46,7 @@ try {
   await page.keyboard.press('e');
   await page.locator('.npc-dialog').waitFor({state:'visible'});
   assert.equal(await page.locator('.npc-speaker').textContent(),'Арман');
+  await page.waitForFunction(()=>{const img=document.querySelector('.npc-portrait img');return img?.complete&&img.naturalWidth>0;});
   assert.ok(await page.locator('.npc-portrait img').evaluate(img=>img.complete&&img.naturalWidth>0));
   await page.locator('#npc-next').click();
   await page.keyboard.press('Enter');
