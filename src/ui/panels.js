@@ -18,6 +18,25 @@ export function createPanels(dialog,handlers){
   let npcScript=[],npcIndex=0,npcTimer=null,npcFullyTyped=false,npcId=null;
   const learningUI=createLearningUI(inner,handlers);
   const failures=new Map();
+  function mistakeKey(q,context){return context+':'+(q?.id||q?.title||'question');}
+  function recordQuestionError(q,answer,context){
+    handlers.recordMistake?.({language:q.language||handlers.language(),topic:q.title||'Программирование',
+      location:context,codeSnippet:q.codeSnippet||'',answer:String(answer),
+      expected:String(q.expectedAnswer??''),explanation:q.explanation||'',
+      steps:[
+        'Найди переменные, типы данных и начальные значения.',
+        'Выполни по очереди каждую строку, отмечая изменения.',
+        q.explanation||q.hint||'Сравни полученное значение с возможными ответами.'
+      ]});
+  }
+  function questionReview(q,answer,showAnswer=false){
+    const a='<strong>Разбор задания</strong><ol><li>Определи значения переменных и порядок действий.</li>'+
+      '<li>Пройди каждую строку и каждую итерацию по очереди.</li>'+
+      '<li>'+esc(q.explanation||q.hint||'Проверь вычисления и индексы.')+'</li></ol>';
+    return a+(showAnswer?'<p><strong>Верный ответ:</strong> <code>'+esc(q.expectedAnswer)+'</code></p>'+
+      '<p>Сравни с твоим ответом: <code>'+esc(answer||'—')+'</code>. Попробуй исправить и проверить ещё раз.</p>':
+      '<p>Попробуй ещё раз. Если не получится, нажми «Разобрать».</p>');
+  }
   let practiceDifficulty='easy',practiceIndex=0;
   let externalBank=[],extraLoaded=false;
   async function ensureExtraBank(){
@@ -90,7 +109,7 @@ export function createPanels(dialog,handlers){
       '<span class="difficulty-badge">'+language.toUpperCase()+' · '+questions.length+' задач на уровне</span></div>'+
       '<h3>'+esc(q.title||'Задание по программированию')+'</h3><p>'+esc(q.prompt)+'</p>'+
       '<pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+answers+
-      '<div class="quest-actions"><button id="code-check">ПРОВЕРИТЬ</button><button id="practice-next">ДРУГОЙ ВОПРОС →</button></div>'+
+      '<div class="quest-actions"><button id="code-check">ПРОВЕРИТЬ</button><button id="code-explain">РАЗОБРАТЬ ОШИБКУ</button><button id="practice-next">ДРУГОЙ ВОПРОС →</button></div>'+
       '<div id="code-feedback" class="panel-feedback" role="status"></div>',
       'LEARN / PYTHON + GO');
   }
@@ -136,7 +155,7 @@ export function createPanels(dialog,handlers){
       '<div class="quest-topline"><span class="difficulty-badge">'+doorLanguage.toUpperCase()+' / '+
       esc(q.title||'Задача '+selectedDoor.difficulty)+'</span><span class="quest-number">ЗАДАНИЕ #'+(doorAttempt+1)+'</span></div>'+
       '<h3>'+esc(q.prompt)+'</h3><pre class="quest-code">'+esc(q.codeSnippet)+'</pre>'+answers+
-      '<div class="quest-actions"><button id="door-check">ПРОВЕРИТЬ И ОТКРЫТЬ</button><button id="door-next">ДРУГОЕ ЗАДАНИЕ</button></div>'+
+      '<div class="quest-actions"><button id="door-check">ПРОВЕРИТЬ И ОТКРЫТЬ</button><button id="door-explain">НЕ МОГУ РЕШИТЬ — РАЗОБРАТЬ</button><button id="door-next">ДРУГОЕ ЗАДАНИЕ</button></div>'+
       '<div class="panel-feedback" id="door-feedback" role="status">Подсказка: '+esc(q.hint)+'</div>',
       'QAMAL / DOOR CHALLENGE');
     inner.querySelector('#door-answer')?.focus();
@@ -244,6 +263,12 @@ export function createPanels(dialog,handlers){
       doorLanguage=e.target.dataset.doorLanguage;doorAttempt=0;drawDoor();return;
     }
     if(id==='door-next'){doorAttempt++;drawDoor();return;}
+    if(id==='door-explain'&&doorQuestion){
+      inner.querySelector('#door-feedback').innerHTML=questionReview(doorQuestion,'',true);return;
+    }
+    if(id==='code-explain'&&currentQuestion){
+      inner.querySelector('#code-feedback').innerHTML=questionReview(currentQuestion,'',true);return;
+    }
     if(id==='door-check'){
       if(!doorQuestion)return;
       const answer=inner.querySelector('[name=door-option]:checked')?.value??inner.querySelector('#door-answer')?.value;
@@ -259,8 +284,11 @@ export function createPanels(dialog,handlers){
           '<button data-close>ПРОДОЛЖИТЬ ИГРУ →</button>',
           'QAMAL / CHECKPOINT COMPLETE');
       }else{
-        feedback.textContent='Пока неверно. '+doorQuestion.hint+
-          (selectedDoor.difficulty==='easy'?' В лёгком секторе нет штрафа тревоги.':' Сигнал контрольной точки немного повысил тревогу.');
+        const key=mistakeKey(doorQuestion,'door'),attempt=(failures.get(key)||0)+1;
+        failures.set(key,attempt);recordQuestionError(doorQuestion,answer,'Дверь '+selectedDoor.id);
+        feedback.innerHTML='<p>Неправильный ответ — разберём, почему.</p>'+
+          questionReview(doorQuestion,answer,attempt>=2)+
+          (selectedDoor.difficulty==='easy'?'<p>В лёгком секторе нет штрафа тревоги.</p>':'<p>Сигнал контрольной точки немного повысил тревогу.</p>');
         if(selectedDoor.difficulty!=='easy')handlers.raiseAlarm(selectedDoor.difficulty==='medium'?5:8);
       }
       return;
@@ -270,8 +298,14 @@ export function createPanels(dialog,handlers){
       const answer=inner.querySelector('[name=practice-option]:checked')?.value??inner.querySelector('#code-free-answer')?.value;
       if(!answer?.trim()){feedback.textContent='Сначала введи ответ.';return;}
       const result=checkAnswer(currentQuestion,answer);
-      feedback.textContent=result.feedback;
-      if(result.correct)handlers.mark('learned');
+      if(result.correct){
+        feedback.innerHTML='<p>'+esc(result.feedback)+'</p>';
+        if(!handlers.getProgress)handlers.mark('learned');
+      }else{
+        const key=mistakeKey(currentQuestion,'practice'),attempt=(failures.get(key)||0)+1;
+        failures.set(key,attempt);recordQuestionError(currentQuestion,answer,'Тренировочный терминал');
+        feedback.innerHTML=questionReview(currentQuestion,answer,attempt>=2);
+      }
       return;
     }
     if(id==='practice-next'){practiceIndex++;drawCode();return;}
