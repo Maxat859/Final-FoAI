@@ -348,6 +348,11 @@ async function init(){
       void panels.open('classroom');
     }
   });
+  $('new-game-btn').addEventListener('click',async()=>{
+    if(!window.confirm('Начать новую игру? Пройденные уроки, открытые двери и журнал ошибок будут сброшены. Язык обучения сохранится.'))return;
+    await storage.set('progress',null);
+    window.location.reload();
+  });
   $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
   $('exit-btn').addEventListener('click',()=>show($('main-menu')));
