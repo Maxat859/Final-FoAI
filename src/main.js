@@ -14,6 +14,8 @@ import {createTrainingLabUI} from './ui/trainingLabUI.js';
 import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities} from './game/liveWorld.js';
 import {changeAlarm} from './game/alarm.js';
 import {adjacentDoor,findDoor,doorId,DIFFICULTY_LABEL} from './game/doorChallenges.js';
+import {makeEscortPath,GUARD_APPROACH,CLASSROOM_DESK} from './game/escort.js';
+import {validateProgress} from './education/curriculum.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
@@ -28,6 +30,7 @@ const seenByFloor={1:new Set(),2:new Set()},unlockedByFloor={1:new Set(),2:new S
 let player={...START_POSITION},seen=seenByFloor[1],visible=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
 let unlockedDoors=unlockedByFloor[1];
 let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
+let storyStage='wake',escorting=false,learningProgress=validateProgress(null),mistakeJournal=[];
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
 function updateVision(){
@@ -45,14 +48,20 @@ function render(){
   const mode=alarm>=75?'КРИТИЧЕСКАЯ ТРЕВОГА':alarm>=60?'ПОИСК':alarm>=40?'ПОДОЗРЕНИЕ':'ПАТРУЛЬ';
   const guardLabel=$('guard-state');if(guardLabel)guardLabel.textContent=mode;
   const logEl=$('live-events');if(logEl)logEl.textContent=live.events.slice(-2).map(e=>`${e.source}: ${e.description}`).join(' · ') || 'СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ';
-  $('objective').textContent=objective(mission);
+  $('objective').textContent=storyStage==='wake'?'Проснуться в камере':
+    storyStage==='guard'?'Поговорить с охранником':
+    storyStage==='escort'?'Следовать за охранником до учебного класса':
+    storyStage==='classroom'?'Пройти первый урок '+$('language-select').value.toUpperCase():objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
   const hint=$('action-prompt');
   if(hint){
     const stair=stairAtPlayer();
     const door=adjacentDoor(world,player,unlockedDoors);
-    const target=nearestInteraction(player,world,entities);
-    hint.textContent=stair?'E — '+(floor===1?'ПОДНЯТЬСЯ НА 2 ЭТАЖ':'СПУСТИТЬСЯ НА 1 ЭТАЖ')+' · ЛЕСТНИЦА':
+    const target=nearestInteraction(player,world,entities,floor);
+    hint.textContent=escorting?'ОХРАННИК ПРОВОДИТ В КЛАСС · СЮЖЕТНЫЙ ЭПИЗОД':
+      storyStage==='guard'?'E — ПОГОВОРИТЬ С ОХРАННИКОМ':
+      target?.kind==='library'?'E — ЗАЙТИ В БИБЛИОТЕКУ · УЧИТЬСЯ':
+      stair?'E — '+(floor===1?'ПОДНЯТЬСЯ НА 2 ЭТАЖ':'СПУСТИТЬСЯ НА 1 ЭТАЖ')+' · ЛЕСТНИЦА':
       door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
       target?.kind==='npc'?'E — ПОГОВОРИТЬ С '+target.name.toUpperCase():
       target?'E — '+target.name.toUpperCase():
@@ -61,7 +70,7 @@ function render(){
 }
 async function persist(){
   await storage.set('progress',{
-    mapVersion:3,floor,player,mission,alarm,live,introSeen,
+    mapVersion:3,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
     seenByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...seenByFloor[f]]])),
     unlockedByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...unlockedByFloor[f]]])),
     seen:[...seenByFloor[1]],unlockedDoors:[...unlockedByFloor[1]]
@@ -118,17 +127,20 @@ function raiseAlarm(value){
 }
 function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
+  if(escorting)return;
+  if(storyStage==='guard'){void panels.open('guard-arrival');return;}
   if(stairAtPlayer()){changeFloor();return;}
   const door=adjacentDoor(world,player,unlockedDoors);
   if(door){void panels.open('door',door);return;}
-  const target=nearestInteraction(player,world,entities);
+  const target=nearestInteraction(player,world,entities,floor);
   if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
   if(target.kind==='npc'){void panels.open('npc',target);return;}
-  const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
+  const mapping={classroom:'classroom',library:'library',lock:'lock',cctv:'cctv',dossier:'dossiers'};
   if(mapping[target.kind])void panels.open(mapping[target.kind]);
   else message('Нажми E возле отмеченного объекта.');
 }
 function move(direction){
+  if(escorting)return;
   const targetRow=player.row+direction[0],targetCol=player.col+direction[1];
   const door=findDoor(world,targetRow,targetCol);
   if(door&&!unlockedDoors.has(door.id)){
@@ -152,6 +164,89 @@ function move(direction){
   else message(zoneAt(player.row,player.col,floor)+' · этаж '+floor+' · клетка ('+player.row+','+player.col+') · E возле объектов.');
   route=[];render();void persist();
 }
+function escortGuardEntity(){
+  return entitiesByFloor[1].find(e=>e.id==='escort-story');
+}
+function ensureEscortGuard(){
+  let e=escortGuardEntity();
+  if(!e){
+    e={id:'escort-story',floor:1,row:8,col:6,spriteId:ASSET_IDS.guard,name:'Дежурный охранник',role:'escort'};
+    entitiesByFloor[1].push(e);
+  }
+  return e;
+}
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function guardArrives(){
+  if(storyStage!=='wake')return;
+  storyStage='guard';escorting=true;
+  activateFloor(1);
+  const guard=ensureEscortGuard();
+  unlockedByFloor[1].add(doorId(8,6));
+  message('Звенят ключи. Охранник открывает решётку и подходит к твоей камере...');
+  render();
+  for(const p of GUARD_APPROACH){
+    guard.row=p.row;guard.col=p.col;
+    render();await sleep(220);
+  }
+  escorting=false;
+  await persist();
+  await panels.open('guard-arrival');
+}
+async function beginEscort(){
+  if(storyStage!=='guard')return;
+  storyStage='escort';escorting=true;
+  const guard=ensureEscortGuard();
+  try{
+    const passage=makeEscortPath(world,{row:player.row,col:player.col},CLASSROOM_DESK);
+    for(let i=1;i<passage.path.length;i++){
+      const point=passage.path[i],ahead=passage.path[Math.min(i+1,passage.path.length-1)];
+      if(world[point.row][point.col]==='D')unlockedDoors.add(doorId(point.row,point.col));
+      if(world[ahead.row][ahead.col]==='D')unlockedDoors.add(doorId(ahead.row,ahead.col));
+      guard.row=ahead.row;guard.col=ahead.col;
+      player={...player,row:point.row,col:point.col,
+        facing:i+1<passage.path.length?(passage.path[i+1].col>point.col?'right':'up'):'right',steps:player.steps+1};
+      updateVision();
+      route=passage.path.slice(i,Math.min(i+4,passage.path.length));
+      if(i===4)message('Охранник открыл дверь служебным пропуском. Двигайся к учебному классу.');
+      render();
+      await sleep(165);
+    }
+    message('Ты в учебном классе. Начни с основ '+$('language-select').value.toUpperCase()+'.');
+  }catch(error){
+    console.error('[QAMAL escort]',error);
+    // Safe recovery: always arrive at the real classroom even if path data changes.
+    player={...player,row:CLASSROOM_DESK.row,col:CLASSROOM_DESK.col};
+    updateVision();
+    message('Сопровождение завершено. Приступай к уроку.');
+  }finally{
+    const guardIndex=entitiesByFloor[1].findIndex(e=>e.id==='escort-story');
+    if(guardIndex>=0)entitiesByFloor[1].splice(guardIndex,1);
+    storyStage='classroom';escorting=false;route=[];render();
+    await persist();await panels.open('classroom');
+  }
+}
+function onLessonCompleted(language,index){
+  if(!learningProgress[language].includes(index)){
+    learningProgress[language].push(index);
+    learningProgress[language].sort((a,b)=>a-b);
+  }
+  if(storyStage==='classroom')storyStage='free';
+  if(!mission.learned)mark('learned');
+  render();void persist();
+}
+function recordMistake(mistake){
+  const safe={language:mistake.language,topic:String(mistake.topic||'Задача').slice(0,140),
+    location:String(mistake.location||'Практика').slice(0,80),
+    answer:String(mistake.answer||'').slice(0,400),
+    expected:String(mistake.expected||'').slice(0,200),
+    explanation:String(mistake.explanation||'').slice(0,700),
+    codeSnippet:String(mistake.codeSnippet||'').slice(0,1100),
+    steps:Array.isArray(mistake.steps)?mistake.steps.slice(0,6).map(x=>String(x).slice(0,300)):[]};
+  mistakeJournal.push(safe);
+  if(mistakeJournal.length>45)mistakeJournal.shift();
+  void persist();
+}
+
 async function init(){
   show($('main-menu'));
   const previous=await storage.get('progress',null);
