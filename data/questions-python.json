@@ -1,0 +1,60 @@
+[
+  {
+    "id": "PY-01",
+    "language": "python",
+    "difficulty": "easy",
+    "type": "multiple_choice",
+    "prompt": "Что выведет print(len('QAMAL'))?",
+    "choices": {
+      "A": "4",
+      "B": "5",
+      "C": "6",
+      "D": "Ошибка"
+    },
+    "answer": "B",
+    "hint": "Посчитайте буквы в строке.",
+    "explanation": "len() считает количество символов: Q, A, M, A, L."
+  },
+  {
+    "id": "PY-02",
+    "language": "python",
+    "difficulty": "medium",
+    "type": "multiple_choice",
+    "prompt": "Какие числа выдаёт range(3) в цикле?",
+    "choices": {
+      "A": "1, 2, 3",
+      "B": "0, 1, 2, 3",
+      "C": "0, 1, 2",
+      "D": "3, 2, 1"
+    },
+    "answer": "C",
+    "hint": "range() начинает с нуля и не включает правую границу.",
+    "explanation": "range(3) соответствует 0, 1, 2."
+  },
+  {
+    "id": "PY-03",
+    "language": "python",
+    "difficulty": "medium",
+    "type": "short_text",
+    "prompt": "nums = [3, 7, 9]. Чему равно nums[1]? Введите число.",
+    "answer": "7",
+    "hint": "Индексы в Python начинаются с 0.",
+    "explanation": "Элемент с индексом 1 - второй, то есть 7."
+  },
+  {
+    "id": "PY-04",
+    "language": "python",
+    "difficulty": "hard",
+    "type": "multiple_choice",
+    "prompt": "Как правильно записать условие Python?",
+    "choices": {
+      "A": "if x > 3:",
+      "B": "if (x > 3) then",
+      "C": "if x > 3 {}",
+      "D": "when x > 3:"
+    },
+    "answer": "A",
+    "hint": "Для блока if нужно двоеточие.",
+    "explanation": "Python использует if условие: и отступы."
+  }
+]
