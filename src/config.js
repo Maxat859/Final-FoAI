@@ -18,13 +18,13 @@ export const ASSET_IDS=Object.freeze({
   desk:'tile.prop.desk',terminal:'tile.prop.terminal',camera:'tile.prop.camera',
   toilet:'tile.prop.toilet',sink:'tile.prop.sink',locker:'tile.prop.locker',
   shower:'tile.prop.shower',table:'tile.prop.table',lamp:'tile.prop.lamp',
-  vent:'tile.prop.vent',crate:'tile.prop.crate',pipes:'tile.prop.pipes',
+  vent:'tile.prop.vent',crate:'tile.prop.crate',pipes:'tile.prop.pipes',bookcase:'tile.prop.bookcase',
   window:'tile.prop.window',stairsUp:'tile.stairs.up',stairsDown:'tile.stairs.down',
   player:'character.player.erasyl',guard:'character.guard.blue',
   senior:'character.guard.senior',prisoner:'character.prisoner.generic'
 });
 
-export const BLOCKED_TILES=new Set(['#','K','G','B','b','d','t','c','q','s','l','h','m','v','k','w']);
+export const BLOCKED_TILES=new Set(['#','K','G','B','b','d','t','c','q','s','l','h','m','v','k','w','r']);
 const newGrid=()=>Array.from({length:ROWS},(_,r)=>
   Array.from({length:COLS},(_,c)=>(r===0||c===0||r===ROWS-1||c===COLS-1)?'#':'.'));
 const h=(map,r,a,b,kind='#')=>{for(let c=a;c<=b;c++)map[r][c]=kind;};
@@ -115,6 +115,8 @@ function upperFloor(){
     [29,15,'d'],[28,23,'v'],[29,30,'k'],[29,43,'t']
   ]);
   props(map,[[6,16,'L'],[12,23,'L'],[18,31,'L'],[27,19,'L'],[27,42,'L']]);
+  // Library is a distinct explorable room with bookcases on floor 2.
+  props(map,[[10,6,'r'],[11,6,'r'],[12,6,'r'],[13,6,'r'],[11,9,'r']]);
   map[10][10]='N';
   map[26][34]='N';
   return map;
