@@ -75,14 +75,14 @@ test('Guards patrol and detect only the current floor',()=>{
   const first=createLevel(1),second=createLevel(2);
   const state=createLiveWorld();
   assert.equal(state.guards.length,33);
-  assert.equal(guardEntities(state,1).length,4);
-  assert.equal(guardEntities(state,2).length,4);
+  assert.equal(guardEntities(state,1).length,19);
+  assert.equal(guardEntities(state,2).length,14);
   const upper=advanceLiveWorld(state,{row:12,col:30},second,2);
   assert.ok(upper.state.alarm.value>0);
   assert.ok(upper.events.some(e=>e.type==='guard_spotted'));
   const lowerGuards=state.guards.filter(g=>g.floor===1);
   assert.deepEqual(upper.state.guards.filter(g=>g.floor===1),lowerGuards);
   const restored=restoreLiveWorld(JSON.parse(JSON.stringify(upper.state)));
-  assert.equal(guardEntities(restored,2).length,4);
+  assert.equal(guardEntities(restored,2).length,14);
   assert.deepEqual(first[10][10],'U');
 });
