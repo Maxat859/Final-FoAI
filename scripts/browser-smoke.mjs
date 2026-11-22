@@ -11,6 +11,9 @@ try{
   const start=await page.evaluate(()=>({pos:window.QAMAL_DEBUG.getPosition(),bed:window.QAMAL_DEBUG.getTile(10,3),bars:window.QAMAL_DEBUG.getTile(9,4)}));
   assert.equal(start.pos.row,10);assert.equal(start.pos.col,4);assert.equal(start.bed,'b');assert.equal(start.bars,'G');
   await page.locator('.wake-scene').waitFor({state:'visible'});
+  const audioAvailable=await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState().available);
+  assert.equal(audioAvailable,true,'Chromium should support Web Audio');
+  await page.waitForFunction(()=>window.QAMAL_DEBUG.getAudioState().ready,{timeout:4000});
   await page.screenshot({path:'/tmp/qamal-cell-wakeup.png',fullPage:true});
   await page.locator('#wake-start').click();
 
@@ -43,6 +46,23 @@ try{
   assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getStoryStage()),'free');
   assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getLearningProgress())).python.includes(0));
   await page.locator('#game-dialog [data-close]').first().click();
+
+  // Four directions, animation and footsteps are visible to the player.
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(10,4,1)),true);
+  const beforeSteps=await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState().played);
+  await page.keyboard.press('ArrowRight');
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getPosition())).facing,'right');
+  await page.keyboard.press('ArrowLeft');
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getPosition())).facing,'left');
+  await page.keyboard.press('ArrowUp'); // metal bars: turning still happens on a blocked cell
+  const blocked=await page.evaluate(()=>window.QAMAL_DEBUG.getPosition());
+  assert.equal(blocked.facing,'up');
+  assert.equal(blocked.row,10);
+  assert.equal(blocked.col,4);
+  await page.keyboard.press('ArrowDown');
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getPosition())).facing,'down');
+  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState().played))>beforeSteps);
+  await page.screenshot({path:'/tmp/qamal-facing-animation.png',fullPage:true});
 
   // The game still fills the browser and door quizzes still work.
   const screen=await page.locator('#game-canvas').boundingBox();
@@ -103,7 +123,22 @@ try{
   assert.equal(await page.locator('#tools-popup').isVisible(),true);
   await page.locator('#tools-close').click();
 
+  // Sound can be toggled at any time and its volume saved from Settings.
+  await page.locator('#sound-toggle').click();
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
+  assert.equal(await page.locator('#sound-toggle').getAttribute('aria-pressed'),'false');
+  await page.locator('#sound-toggle').click();
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,true);
+  await page.keyboard.press('Escape');
+  await page.locator('#settings-btn').click();
+  await page.locator('#audio-volume').fill('58');
+  await page.locator('#audio-enabled').uncheck();
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).volume,.58);
+  await page.locator('#back-btn').click();
+  await page.locator('#play-btn').click();
+  assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
   assert.deepEqual(errors,[],'No uncaught browser errors');
   await page.screenshot({path:'/tmp/qamal-game-browser-smoke.png',fullPage:true});
-  console.log('QAMAL browser walk: prisoner wake-up, guard escort, Python lesson and feedback, door quiz, Arman mentor, Go library, stairs — PASS');
+  console.log('QAMAL browser walk: wake-up, escorted class, door, mentor, library, stairs, SFX toggle, volume and 4-direction sprites — PASS');
 }finally{await browser.close();}
