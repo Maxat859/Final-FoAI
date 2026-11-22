@@ -264,6 +264,20 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
     if(stack.has(i))return true;
     stack.add(i);
     const owner=held.get(desired.get(i));
+    if(owner!==undefined&&!desired.has(owner)){
+      // A resident who already reached a narrow room may briefly step into
+      // the approaching resident's previous tile to let them pass.
+      const source=current[i],destination=current[owner],plan=plans[owner];
+      const sourceKey=key(source.floor,source.row,source.col);
+      const atStation=destination.row===plan.target.row&&destination.col===plan.target.col;
+      if(atStation&&!external.has(sourceKey)&&!claims.has(sourceKey)&&
+         Math.abs(destination.row-source.row)+Math.abs(destination.col-source.col)===1){
+        plan.next={x:source.col,y:source.row};
+        plan.path=[];
+        desired.set(owner,sourceKey);
+        claims.add(sourceKey);
+      }
+    }
     const allowed=owner===undefined||canMove(owner);
     stack.delete(i);
     status.set(i,allowed);
