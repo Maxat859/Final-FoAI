@@ -213,6 +213,42 @@ export function restoreResidents(fresh,saved,worlds){
 }
 /** Move one tile per simulation update; never teleport on a shift transition. */
 /** One-tile, simultaneous NPC updates: occupants can trade places in tight halls. */
+
+function alternativeHome(p,people,worlds,external){
+  const world=worlds[p.floor];
+  const busy=new Set(people.filter(other=>other!==p).map(o=>o.row+','+o.col+','+o.floor));
+  const reserved=new Set(people.filter(other=>other!==p).map(o=>o.home.row+','+o.home.col+','+o.floor));
+  const start=p.row+','+p.col;
+  const seen=new Set([start]),queue=[{row:p.row,col:p.col}];
+  const directions=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(let i=0;i<queue.length;i++){
+    const point=queue[i];
+    for(const [dr,dc] of directions){
+      const row=point.row+dr,col=point.col+dc,key=row+','+col;
+      if(seen.has(key)||!isPassable(world,row,col)||busy.has(key+','+p.floor)||
+         external.has(p.floor+':'+key))continue;
+      seen.add(key);queue.push({row,col});
+    }
+  }
+  const rooms=EXPANSION_ROOMS.filter(room=>room.floor===p.floor&&room.type==='cell')
+    .sort((a,b)=>(p.home.row>=b.row&&p.home.row<b.row+b.height?1:0)-
+                 (p.home.row>=a.row&&p.home.row<a.row+a.height?1:0));
+  const options=[];
+  for(const room of rooms){
+    for(let row=room.row+3;row<room.row+room.height-1;row++)
+      for(let col=room.col+2;col<room.col+room.width-1;col++){
+        const key=row+','+col;
+        if(col===room.col+Math.floor(room.width/2)||!seen.has(key)||
+           reserved.has(key+','+p.floor))continue;
+        options.push({row,col,distance:Math.abs(row-p.row)+Math.abs(col-p.col)+
+          (room.row===p.home.row?0:Math.abs(row-p.home.row)+Math.abs(col-p.home.col))});
+      }
+    if(options.length)break;
+  }
+  options.sort((a,b)=>a.distance-b.distance||a.row-b.row||a.col-b.col);
+  return options[0]||null;
+}
+
 let residentTurn=0;
 export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[]}={}){
   const phase=residentRoutine(clock);
@@ -308,13 +344,24 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
     const atHome=p.row===p.home.row&&p.col===p.home.col;
     if(!moving){
       const sleeping=phase==='sleep'&&atHome;
+      const wait=(p.stuckTicks||0)+(atHome?0:1);
+      if(wait>=36&&!atHome&&['rollcall','return','sleep'].includes(phase)){
+        const berth=alternativeHome(p,current,worlds,external);
+        if(berth){
+          const home={row:berth.row,col:berth.col};
+          return {...p,home,
+            stations:{...p.stations,rollcall:home,return:home,sleep:home},
+            sleeping:false,moving:false,animation:'idle',
+            stuckTicks:0,routeTarget:null,pathSteps:[]};
+        }
+      }
       return {...p,sleeping,moving:false,animation:sleeping?'sleep':'idle',
-        routeTarget:plan.goal,pathSteps:plan.path};
+        stuckTicks:wait,routeTarget:plan.goal,pathSteps:plan.path};
     }
     const next={row:plan.next.y,col:plan.next.x};
     return {...p,...next,sleeping:false,moving:true,animation:'walk',
       routeTarget:plan.goal,pathSteps:plan.path.slice(1),
-      walkFrame:(p.walkFrame||0)+1,facing:facingFromStep(p,next,p.facing)};
+      walkFrame:(p.walkFrame||0)+1,stuckTicks:0,facing:facingFromStep(p,next,p.facing)};
   });
 }
 export function nightlyAnnouncement(oldClock,newClock){
