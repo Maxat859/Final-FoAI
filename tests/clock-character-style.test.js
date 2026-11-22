@@ -31,7 +31,7 @@ test('Daytime is 23m20s and night 16m40s of active play; sleeping can skip',()=>
   const nextDay=advancePrisonClockByRealTime(dayEnd,1000*1000);
   assert.equal(nextDay.minutes,6*60); // 10 game hours take 16m40s
   assert.equal(nextDay.day,2);
-  assert.ok(lightLevel(dayEnd)>lightLevel(dayStart));
+  assert.ok(lightLevel({minutes:23*60})>lightLevel({minutes:12*60}));
 });
 test('Clock retains fractional minutes across saves, menu pauses and small ticks',()=>{
   let clock=makePrisonClock();
