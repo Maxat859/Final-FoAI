@@ -184,6 +184,10 @@ export function expandComplex(map,floor){
   for(const [r,c] of [[12,61],[49,35],[61,84]]){
     map[r][c]=floor===1?'U':'N';
   }
+  // Cameras embedded in walls around the new wings, overlooking corridors.
+  for(const [r,c] of [[10,66],[22,92],[47,20],[38,94]]){
+    if(map[r]?.[c]==='K'||map[r]?.[c]==='F')map[r][c]='c';
+  }
   // The old green exit becomes a security terminal; the real finale is far
   // beyond the yard, at the end of the service lane in the southern extension.
   if(floor===1){map[29][45]='.';map[28][45]='t';map[LAST_EXIT.row][LAST_EXIT.col]='E';}
