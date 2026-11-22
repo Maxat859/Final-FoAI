@@ -5,7 +5,7 @@
  */
 export const SOUND_EVENTS=Object.freeze([
   'click','step','blocked','door','bars','stairs','alarm',
-  'success','error','keyboard','dialogue','wake','guard','lesson','complete'
+  'success','error','keyboard','dialogue','wake','guard','lesson','complete','dog'
 ]);
 export const DEFAULT_AUDIO_SETTINGS=Object.freeze({enabled:true,volume:0.42,voice:false});
 
@@ -146,6 +146,11 @@ export function createSoundEngine({
         tone({f:213,endF:135,type:'square',len:.14,amp:.042,time:.14});break;
       case 'wake':
         for(let i=0;i<3;i++)tone({f:720,endF:590,len:.09,amp:.04,time:i*.19});
+        break;
+      case 'dog':
+        // Gentle K9 vocal cue, used only when near a fictional police pair.
+        tone({f:220,endF:115,type:'sawtooth',len:.13,amp:.035});
+        tone({f:165,endF:82,type:'triangle',len:.12,amp:.025,time:.09});
         break;
       case 'guard':
         tone({f:90,endF:66,type:'triangle',len:.19,amp:.058});
