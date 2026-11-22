@@ -214,10 +214,10 @@ export function restoreResidents(fresh,saved,worlds){
 /** Move one tile per simulation update; never teleport on a shift transition. */
 /** One-tile, simultaneous NPC updates: occupants can trade places in tight halls. */
 
-function alternativeHome(p,people,worlds,external){
+function alternativeHome(p,people,worlds,external,reservedHomes){
   const world=worlds[p.floor];
   const busy=new Set(people.filter(other=>other!==p).map(o=>o.row+','+o.col+','+o.floor));
-  const reserved=new Set(people.filter(other=>other!==p).map(o=>o.home.row+','+o.home.col+','+o.floor));
+  const reserved=reservedHomes;
   const start=p.row+','+p.col;
   const seen=new Set([start]),queue=[{row:p.row,col:p.col}];
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -339,15 +339,18 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
       destinations.set(destination,i);
     }
   }
+  const reservedHomes=new Set(current.map(p=>p.home.row+','+p.home.col+','+p.floor));
   return current.map((p,i)=>{
     const plan=plans[i],moving=willMove[i];
     const atHome=p.row===p.home.row&&p.col===p.home.col;
     if(!moving){
       const sleeping=phase==='sleep'&&atHome;
       const wait=(p.stuckTicks||0)+(atHome?0:1);
-      if(wait>=36&&!atHome&&['rollcall','return','sleep'].includes(phase)){
-        const berth=alternativeHome(p,current,worlds,external);
+      if(wait>=36&&wait%36===0&&!atHome&&['rollcall','return','sleep'].includes(phase)){
+        const berth=alternativeHome(p,current,worlds,external,reservedHomes);
         if(berth){
+          reservedHomes.delete(p.home.row+','+p.home.col+','+p.floor);
+          reservedHomes.add(berth.row+','+berth.col+','+p.floor);
           const home={row:berth.row,col:berth.col};
           return {...p,home,
             stations:{...p.stations,rollcall:home,return:home,sleep:home},
