@@ -18,7 +18,15 @@ const INITIAL_GUARDS = [
     patrolRoute: [{x:25,y:5},{x:26,y:5},{x:26,y:6},{x:22,y:6},{x:22,y:5}]
   },
   {id:"guard3",floor:2,x:31,y:12,detectionRadius:4,patrolRoute:[{x:31,y:12},{x:35,y:12},{x:35,y:15},{x:31,y:15}]},
-  {id:"guard4",floor:2,x:42,y:19,detectionRadius:4,patrolRoute:[{x:43,y:19},{x:45,y:19},{x:45,y:23},{x:42,y:23}]}
+  {id:"guard4",floor:2,x:42,y:19,detectionRadius:4,patrolRoute:[{x:43,y:19},{x:45,y:19},{x:45,y:23},{x:42,y:23}]},
+  {id:"guard5",floor:1,x:62,y:12,detectionRadius:4,
+    patrolRoute:[{x:62,y:12},{x:68,y:12},{x:73,y:12},{x:62,y:12}]},
+  {id:"guard6",floor:1,x:20,y:49,detectionRadius:4,
+    patrolRoute:[{x:20,y:49},{x:26,y:49},{x:35,y:49},{x:20,y:49}]},
+  {id:"guard7",floor:2,x:76,y:23,detectionRadius:4,
+    patrolRoute:[{x:76,y:23},{x:83,y:23},{x:88,y:23},{x:76,y:23}]},
+  {id:"guard8",floor:2,x:42,y:61,detectionRadius:4,
+    patrolRoute:[{x:42,y:61},{x:49,y:61},{x:55,y:61},{x:42,y:61}]}
 ];
 
 const CAMERAS = [
@@ -26,7 +34,15 @@ const CAMERAS = [
   {id:"CAM-02",floor:1,x:27,y:9,radius:2},
   {id:"CAM-03",floor:1,x:26,y:16,radius:2},
   {id:"CAM-04",floor:2,x:35,y:5,radius:2},
-  {id:"CAM-05",floor:2,x:44,y:19,radius:2}
+  {id:"CAM-05",floor:2,x:44,y:19,radius:2},
+  {id:"CAM-06",floor:1,x:66,y:10,radius:2},
+  {id:"CAM-07",floor:1,x:92,y:22,radius:2},
+  {id:"CAM-08",floor:1,x:20,y:47,radius:2},
+  {id:"CAM-09",floor:1,x:94,y:38,radius:2},
+  {id:"CAM-10",floor:2,x:66,y:10,radius:2},
+  {id:"CAM-11",floor:2,x:92,y:22,radius:2},
+  {id:"CAM-12",floor:2,x:20,y:47,radius:2},
+  {id:"CAM-13",floor:2,x:94,y:38,radius:2}
 ];
 
 export function createLiveWorld() {
