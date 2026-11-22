@@ -20,7 +20,7 @@ import {validateProgress} from './education/curriculum.js';
 import {createSoundEngine,sanitizeAudioSettings} from './audio/soundEngine.js';
 import {facingFromStep} from './ui/characterSprite.js';
 import {CELL_BED,CLASS_START,nightPhase,cellsLocked,nearBunk,createNightWorld,
-  nightGateAt,createResidentRoster,updateResidents,nightlyAnnouncement,
+  nightGateAt,createResidentRoster,restoreResidents,updateResidents,residentRoutine,nightlyAnnouncement,
   nextMorningClock} from './game/nightRoutine.js';
 
 const $=id=>document.getElementById(id);
@@ -80,6 +80,15 @@ function syncResidents(){
     else list.push(payload);
   }
 }
+function routineObstacles(){
+  return [{floor,row:player.row,col:player.col},
+    ...live.guards.map(g=>({floor:g.floor,row:g.y,col:g.x})),
+    ...live.dogs.map(d=>({floor:d.floor,row:d.y,col:d.x}))];
+}
+function advanceResidents(){
+  residents=updateResidents(residents,live.clock,worlds,{blockedPositions:routineObstacles()});
+  syncResidents();
+}
 function updateVision(){
   visible=computeFieldOfView(visibleWorld(),player.row,player.col);
   for(const tile of visible)seen.add(tile);
@@ -94,6 +103,7 @@ function render(){
   $('game-screen').dataset.timeOfDay=now.phase;
   const phase=nightPhase(live.clock);
   $('game-screen').dataset.prisonPhase=phase;
+  $('game-screen').dataset.residentRoutine=residentRoutine(live.clock);
   const routineStatus=$('night-status');
   if(routineStatus)routineStatus.textContent=phase==='sleep'?'СОН / НОЧНОЕ ДЕЖУРСТВО':
     phase==='rollcall'?'ВЕЧЕРНЯЯ ПЕРЕКЛИЧКА':
@@ -136,7 +146,7 @@ function render(){
 }
 async function persist(){
   await storage.set('progress',{
-    mapVersion:5,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
+    mapVersion:5,floor,player,mission,alarm,live,residents,introSeen,storyStage,learningProgress,mistakeJournal,
     seenByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...seenByFloor[f]]])),
     unlockedByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...unlockedByFloor[f]]])),
     seen:[...seenByFloor[1]],unlockedDoors:[...unlockedByFloor[1]]
@@ -202,8 +212,7 @@ function returnHeroToCell(){
   message('20:00 — ВОЗВРАЩЕНИЕ В КАМЕРЫ. Решётки закрыты до 06:00.');
 }
 function handleNightChange(oldClock){
-  residents=updateResidents(residents,live.clock,worlds);
-  syncResidents();
+  advanceResidents();
   if(['rollcall','return'].includes(nightPhase(live.clock)))showRollCallInspector(true);
   const event=nightlyAnnouncement(oldClock,live.clock);
   if(!event)return;
@@ -242,8 +251,7 @@ async function sleepToMorning(){
   }
   const previous=live.clock;
   live={...live,clock:nextMorningClock(previous)};
-  residents=updateResidents(residents,live.clock,worlds,{steps:1});
-  syncResidents();showRollCallInspector(false);
+  advanceResidents();showRollCallInspector(false);
   player={...player,moving:false,facing:'down'};
   audio.play('wake');updateVision();
   message('НОВЫЙ ДЕНЬ — '+formatPrisonClock(live.clock).time+
@@ -551,8 +559,8 @@ async function init(){
     if(floor!==1||Math.abs(player.row-CELL_BED.row)>2||Math.abs(player.col-CELL_BED.col)>3)
       returnHeroToCell();
   }
-  residents=updateResidents(residents,live.clock,worlds);
-  syncResidents();
+  residents=restoreResidents(residents,previous?.residents,worlds);
+  advanceResidents();
   if(nightPhase(live.clock)==='rollcall'||nightPhase(live.clock)==='return')
     showRollCallInspector(true);
   updateVision();
@@ -644,8 +652,8 @@ async function init(){
     configureAudio({enabled:next});
     if(next)void audio.unlock().then(ok=>{if(ok)audio.play('click');});
   });
-  $('back-btn').addEventListener('click',()=>show($('main-menu')));
-  $('exit-btn').addEventListener('click',()=>show($('main-menu')));
+  $('back-btn').addEventListener('click',()=>{show($('main-menu'));void persist();});
+  $('exit-btn').addEventListener('click',()=>{show($('main-menu'));void persist();});
   $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
   const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
   audio.setSettings(sanitizeAudioSettings(await storage.get('audioSettings',null)));
@@ -670,7 +678,7 @@ async function init(){
   window.addEventListener('resize',()=>{renderer.resize();render();});
   document.addEventListener('keydown',event=>{
     if($('game-screen').hidden)return;
-    if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else if(!$('tools-popup').hidden){$('tools-popup').hidden=true;}else{show($('main-menu'));}return;}
+    if(event.code==='Escape'){if(panels.isOpen()){panels.close();event.preventDefault();}else if(!$('tools-popup').hidden){$('tools-popup').hidden=true;}else{show($('main-menu'));void persist();}return;}
     if(panels.isOpen()){
       if(event.code==='KeyE'||event.code==='Enter'){
         if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
@@ -691,6 +699,6 @@ async function init(){
   });
   startPrisonSimulation();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getNightPhase:()=>nightPhase(live.clock),getResidents:()=>structuredClone(residents),getInspectors:()=>entitiesByFloor[1].filter(e=>e.id.startsWith('rollcall-inspector')).map(e=>({row:e.row,col:e.col,moving:e.moving})),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),getDayLengthMs:()=>REAL_DAY_MS,setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};residents=updateResidents(residents,live.clock,worlds);syncResidents();updateVision();render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>(f===floor?visibleWorld():createNightWorld(worlds[f],f,live.clock))?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getNightPhase:()=>nightPhase(live.clock),getResidents:()=>structuredClone(residents),getInspectors:()=>entitiesByFloor[1].filter(e=>e.id.startsWith('rollcall-inspector')).map(e=>({row:e.row,col:e.col,moving:e.moving})),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),getDayLengthMs:()=>REAL_DAY_MS,setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};advanceResidents();updateVision();render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>(f===floor?visibleWorld():createNightWorld(worlds[f],f,live.clock))?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
