@@ -287,9 +287,9 @@ async function escortToMorningClass(){
 function startPrisonSimulation(){
   if(patrolTimer!==null)return;
   patrolTimer=window.setInterval(()=>{
-    const now=performance.now();
-    const elapsed=lastTickTimestamp===null?900:Math.max(0,now-lastTickTimestamp);
-    lastTickTimestamp=now; // Pauses never get counted when gameplay resumes.
+    const timestamp=performance.now();
+    const elapsed=lastTickTimestamp===null?900:Math.max(0,timestamp-lastTickTimestamp);
+    lastTickTimestamp=timestamp; // Pauses never get counted when gameplay resumes.
     if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
        escorting||!['free','classroom'].includes(storyStage)||mission.finished)return;
     const was=getRoutine(live.clock).name;
