@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {createLevel,DEFAULT_ENTITIES,isPassable} from '../src/config.js';
 import {createLiveWorld,advanceLiveWorld} from '../src/game/liveWorld.js';
 import {createResidentRoster,updateResidents,createNightWorld,CELL_GATES,CELL_BED,
-  nightGateAt,cellsLocked,isQuietHours,nearBunk,nightPhase,nightlyAnnouncement,nextMorningClock}
+  nightGateAt,cellsLocked,isQuietHours,nearBunk,nightPhase,nightlyAnnouncement,nextMorningClock,
+  residentRoutine,restoreResidents}
   from '../src/game/nightRoutine.js';
 const worlds={1:createLevel(1),2:createLevel(2)};
 const at=(h,m=0,day=1)=>({minutes:h*60+m,day});
@@ -62,10 +63,24 @@ test('Residents return to bunk zones, get to bed and wake for morning',()=>{
  let state=updateResidents(roster,at(17),worlds,{steps:3});
  assert.ok(state.filter((p,i)=>p.row!==roster[i].row||p.col!==roster[i].col).length>10);
  assert.ok(state.every(p=>!p.sleeping));
- state=updateResidents(state,at(20),worlds);
+ for(let i=0;i<340;i++){
+   const before=state;
+   state=updateResidents(state,at(20),worlds);
+   const positions=state.map(p=>p.floor+':'+p.row+','+p.col);
+   assert.equal(new Set(positions).size,state.length,'no resident overlap');
+   for(let j=0;j<state.length;j++){
+     const p=state[j],old=before[j];
+     assert.ok(Math.abs(p.row-old.row)+Math.abs(p.col-old.col)<=1,'no teleport');
+     assert.ok(isPassable(worlds[p.floor],p.row,p.col),'no blocked tile');
+   }
+ }
  assert.ok(state.every(p=>p.row===p.home.row&&p.col===p.home.col&&!p.sleeping));
  state=updateResidents(state,at(22),worlds);
  assert.ok(state.every(p=>p.sleeping&&!p.moving));
+ const reloaded=restoreResidents(createResidentRoster(worlds,DEFAULT_ENTITIES),
+   JSON.parse(JSON.stringify(state)),worlds);
+ assert.ok(reloaded.every((p,i)=>p.row===state[i].row&&p.col===state[i].col));
+ assert.ok(reloaded.every((p,i)=>p.home.row===state[i].home.row&&p.home.col===state[i].home.col));
  state=updateResidents(state,at(6),worlds);
  assert.ok(state.every(p=>!p.sleeping));
 });
