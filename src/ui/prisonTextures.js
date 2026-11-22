@@ -177,12 +177,21 @@ function prop(ctx,t,x,y){
 export function paintPrisonTile(ctx,t,x,y,row,col,floor=1,opened=false){
   // Different surfaces for tiled buildings, fenced exercise grounds and court.
   if(t==='Y'||t==='Z'){
-    R(ctx,x,y,32,32,t==='Y'?'#64717a':'#4b6a71');
-    R(ctx,x,y+15,32,1,t==='Y'?'#465962':'#c8bd9d');
-    R(ctx,x+15,y,1,32,t==='Y'?'#51606a':'#476a70');
+    R(ctx,x,y,32,32,t==='Y'?'#64717a':'#466e72');
+    if(t==='Y'){
+      R(ctx,x,y+31,32,1,'#4c5b62');
+      R(ctx,x+31,y,1,32,'#57676a');
+    }else{
+      // Continuous sports-court marking, not stripes repeated on every tile.
+      if(row===44||row===54)R(ctx,x,y+(row===44?2:29),32,2,'#d7cfb5');
+      if(col===71||col===92)R(ctx,x+(col===71?2:29),y,2,32,'#d7cfb5');
+      if(col===82)R(ctx,x+15,y,2,32,'#d7cfb5');
+      if((row===48||row===50)&&(col===76||col===87))
+        R(ctx,x+8,y+15,16,2,'#d7cfb5');
+    }
     for(let i=0;i<5;i++){
       const xx=(hash(row,col,i*3)%28)+2,yy=(hash(row,col,i*3+1)%28)+2;
-      D(ctx,x+xx,y+yy,1,'#8a8e87');
+      D(ctx,x+xx,y+yy,1,t==='Y'?'#8a8e87':'#6e9390');
     }
     return;
   }
