@@ -5,10 +5,10 @@ import { createLiveWorld, advanceLiveWorld, restoreLiveWorld, guardEntities, rel
 
 test("Новая глава содержит двух игровых охранников и нормальный уровень тревоги",()=>{
   const live=createLiveWorld();
-  assert.equal(live.guards.length,4);
+  assert.equal(live.guards.length,8);
   assert.equal(live.alarm.value,0);
   assert.equal(live.status,"playing");
-  assert.equal(guardEntities(live).length,2);
+  assert.equal(guardEntities(live).length,4);
 });
 
 test("Охранники участвуют в обновлении мира после ходов игрока",()=>{
@@ -19,7 +19,7 @@ test("Охранники участвуют в обновлении мира п�
     state=next.state;
   }
   assert.equal(state.tick,4);
-  assert.equal(state.guards.length,4);
+  assert.equal(state.guards.length,8);
   assert.ok(state.guards.every(g=>["patrol","suspicion","search","chase"].includes(g.state)));
 });
 
