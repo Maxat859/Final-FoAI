@@ -7,7 +7,7 @@ import {createLiveWorld,advanceLiveWorld,guardEntities,restoreLiveWorld} from '.
 import {paintPrisonTile} from '../src/ui/prisonTextures.js';
 import {findPath} from '../src/algorithms/search.js';
 
-test('Two complete 48×32 maps exist and have different prison layouts',()=>{
+test('Two complete 104×72 maps exist and have different prison layouts',()=>{
   assert.deepEqual(FLOORS,[1,2]);
   const lower=createLevel(1),upper=createLevel(2);
   for(const map of [lower,upper]){
@@ -38,14 +38,15 @@ test('Prisoner wakes next to a bed in a locked cell with actual bars',()=>{
 
 test('Paired staircases are on passable tiles on both floors',()=>{
   const maps={1:createLevel(1),2:createLevel(2)};
-  assert.equal(STAIR_LINKS.length,2);
+  assert.equal(STAIR_LINKS.length,5);
   for(const s of STAIR_LINKS){
     assert.equal(maps[1][s.row][s.col],'U');
     assert.equal(maps[2][s.row][s.col],'N');
     assert.ok(isPassable(maps[1],s.row,s.col));
     assert.ok(isPassable(maps[2],s.row,s.col));
   }
-  assert.equal(maps[1][29][45],'E');
+  assert.equal(maps[1][68][100],'E');
+  assert.equal(maps[1][29][45],'.');
 });
 
 test('Both staircases are navigable on upper floor with opened doors',()=>{
