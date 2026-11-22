@@ -178,6 +178,18 @@ export function createPanels(dialog,handlers){
   }
   function getNpcScript(npc){
     const person=npc?.id??'unknown';
+    if(npc?.role==='police')return [
+      ['Полицейский','На прогулочном дворе дежурят постовые и патрульные сотрудники. Рядом работают кинологи со служебными собаками.'],
+      ['Ерасыл','Смена охраны бывает разной?'],
+      ['Полицейский','Да. Днём идут занятия и прогулка, ночью — режим тишины. Посмотри на игровые часы вверху экрана.']
+    ];
+    if(npc?.role==='guard'&&!['guard1','guard2'].includes(person))return [
+      ['Охранник',npc.mode==='post'?
+        'Я закреплён за этим постом и остаюсь здесь. Другие сотрудники обходят коридоры.':
+        'Я проверяю соседние сектора. У патрульных собственные маршруты, а у постовых — постоянное место.'],
+      ['Ерасыл','Какие здесь помещения?'],
+      ['Охранник','Ищи таблички на карте. Тут есть учебные классы, медицинский блок, столовая, архив и мастерские.']
+    ];
     const scripts={
       arman:[
         ['Арман','Ерасыл! Я надеялся, что ты меня услышишь. Твой файл в системе выглядит подозрительно.'],
@@ -240,7 +252,7 @@ export function createPanels(dialog,handlers){
     if(npcIndex>=npcScript.length){close();return;}
     const [speaker,phrase]=npcScript[npcIndex];
     handlers.speak?.(phrase);
-    const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard'})[speaker]||'default';
+    const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard',Полицейский:'guard'})[speaker]||'default';
     const portrait=handlers.portraitFor?.(portraitId)||'./assets/characters/prisoners/prisoner.png';
     inner.innerHTML='<div class="npc-dialog">'+
       '<div class="npc-portrait portrait-'+portraitId+'"><img src="'+esc(portrait)+'" alt="Портрет '+esc(speaker)+'"></div>'+
