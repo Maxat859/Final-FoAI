@@ -151,6 +151,8 @@ function buildYard(map,room,floor){
     [r+3,c+30,'g'],[r+19,c+30,'g'],
     [r+2,c+40,'X'],[r+20,c+40,'X']
   ])map[rr][cc]=t;
+  // Floodlight fixtures in the four yard corners illuminate evening scenes.
+  for(const [rr,cc] of [[r+3,c+4],[r+3,c+w-5],[r+h-4,c+4],[r+h-4,c+w-5]])map[rr][cc]='L';
   if(floor===2){
     // Roof gallery, marked by perimeter lights; still playable.
     map[r+4][c+7]='L';map[r+18][c+7]='L';
