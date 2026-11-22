@@ -57,7 +57,7 @@ export function nextPatrol(guard,world,clock){
   const next=steps.shift();
   return {...original,x:next.x,y:next.y,patrolIndex:index,pathSteps:steps,
     facing:facingFromStep({col:guard.x,row:guard.y},{col:next.x,row:next.y},guard.facing),
-    animation:'walk',moving:true};
+    animation:'walk',moving:true,walkFrame:(guard.walkFrame??0)+1};
 }
 
 export function createK9Unit({id,floor,handlerId,x,y,name}){
