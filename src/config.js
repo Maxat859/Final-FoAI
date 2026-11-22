@@ -1,14 +1,16 @@
-// QAMAL — two handcrafted 48×32 prison floors; all coordinates: {row,col}.
+// QAMAL — two massive 104×72 playable prison floors with the original chapter preserved.
+import {WORLD_ROWS,WORLD_COLS,LAST_EXIT,EXTRA_STAIRS,expandComplex,expansionLabels,expansionRoomAt} from './game/complexExpansion.js';
 export const TILE_SIZE=32;
-export const ROWS=32;
-export const COLS=48;
+export const ROWS=WORLD_ROWS;
+export const COLS=WORLD_COLS;
 export const VIEW_ROWS=15;
 export const VIEW_COLS=23;
 export const FLOORS=[1,2];
-export const EXIT_POSITION=Object.freeze({row:29,col:45});
+export const EXIT_POSITION=LAST_EXIT;
 export const STAIR_LINKS=Object.freeze([
   {id:'north',row:10,col:10,from:1,to:2},
-  {id:'service',row:26,col:34,from:1,to:2}
+  {id:'service',row:26,col:34,from:1,to:2},
+  ...EXTRA_STAIRS
 ]);
 
 export const ASSET_IDS=Object.freeze({
@@ -24,7 +26,7 @@ export const ASSET_IDS=Object.freeze({
   senior:'character.guard.senior',prisoner:'character.prisoner.generic'
 });
 
-export const BLOCKED_TILES=new Set(['#','K','G','B','b','d','t','c','q','s','l','h','m','v','k','w','r']);
+export const BLOCKED_TILES=new Set(['#','K','G','B','F','X','b','d','t','c','q','s','l','h','m','v','k','w','r','j','o','g']);
 const newGrid=()=>Array.from({length:ROWS},(_,r)=>
   Array.from({length:COLS},(_,c)=>(r===0||c===0||r===ROWS-1||c===COLS-1)?'#':'.'));
 const h=(map,r,a,b,kind='#')=>{for(let c=a;c<=b;c++)map[r][c]=kind;};
@@ -84,8 +86,7 @@ function groundFloor(){
   props(map,[[6,9,'L'],[10,18,'L'],[12,24,'L'],[21,18,'L'],[27,36,'L']]);
   map[10][10]='U';
   map[26][34]='U';
-  map[EXIT_POSITION.row][EXIT_POSITION.col]='E';
-  return map;
+  return expandComplex(map,1);
 }
 function upperFloor(){
   const map=newGrid();
@@ -119,7 +120,7 @@ function upperFloor(){
   props(map,[[10,6,'r'],[11,6,'r'],[12,6,'r'],[13,6,'r'],[11,9,'r']]);
   map[10][10]='N';
   map[26][34]='N';
-  return map;
+  return expandComplex(map,2);
 }
 export function createLevel(floor=1){
   if(floor===1)return groundFloor();
@@ -135,7 +136,13 @@ export const DEFAULT_ENTITIES=Object.freeze([
   {id:'guard1',floor:1,row:10,col:21,spriteId:ASSET_IDS.guard,name:'Охранник',role:'guard'},
   {id:'guard2',floor:1,row:5,col:25,spriteId:ASSET_IDS.senior,name:'Старший охранник',role:'guard'},
   {id:'guard3',floor:2,row:12,col:31,spriteId:ASSET_IDS.guard,name:'Охрана второго этажа',role:'guard'},
-  {id:'guard4',floor:2,row:19,col:42,spriteId:ASSET_IDS.senior,name:'Инспектор',role:'guard'}
+  {id:'guard4',floor:2,row:19,col:42,spriteId:ASSET_IDS.senior,name:'Инспектор',role:'guard'},
+  {id:'guard5',floor:1,row:12,col:62,spriteId:ASSET_IDS.guard,name:'Охрана восточного крыла',role:'guard'},
+  {id:'guard6',floor:1,row:49,col:20,spriteId:ASSET_IDS.guard,name:'Охрана мастерских',role:'guard'},
+  {id:'guard7',floor:2,row:23,col:76,spriteId:ASSET_IDS.senior,name:'Инспектор северных камер',role:'guard'},
+  {id:'guard8',floor:2,row:61,col:42,spriteId:ASSET_IDS.guard,name:'Охрана южного блока',role:'guard'},
+  {id:'svetlana',floor:1,row:11,col:67,spriteId:ASSET_IDS.prisoner,name:'Светлана',role:'npc'},
+  {id:'bakyt',floor:2,row:49,col:21,spriteId:ASSET_IDS.prisoner,name:'Бакыт',role:'npc'}
 ]);
 export const ROOM_LABELS=[
   ['БЛОК A / КАМЕРЫ',1,1],['УЧЕБНЫЙ КЛАСС',12,1],
@@ -152,10 +159,14 @@ export const UPPER_ROOM_LABELS=[
   ['СПАЛЬНЫЙ БЛОК',2,26],['КАНЦЕЛЯРИЯ',14,26],
   ['ТЕХНИЧЕСКАЯ ЗОНА',27,26],['ДАЛЬНИЙ КОРИДОР',40,26]
 ];
-export function roomLabelsFor(floor=1){return floor===2?UPPER_ROOM_LABELS:ROOM_LABELS;}
+export function roomLabelsFor(floor=1){return [...(floor===2?UPPER_ROOM_LABELS:ROOM_LABELS),...expansionLabels(floor)];}
 export function inBounds(world,row,col){return row>=0&&row<world.length&&col>=0&&col<world[row].length;}
 export function isPassable(world,row,col){return inBounds(world,row,col)&&!BLOCKED_TILES.has(world[row][col]);}
 export function zoneAt(row,col,floor=1){
+  const expanded=expansionRoomAt(row,col,floor);
+  if(expanded)return expanded.name;
+  if(row>=32)return floor===1?'ЮЖНЫЕ КОРИДОРЫ / СЛУЖЕБНАЯ ЗОНА':'ВЕРХНИЕ СЛУЖЕБНЫЕ ГАЛЕРЕИ';
+  if(col>=48)return floor===1?'ВОСТОЧНЫЕ КОРИДОРЫ / КАМЕРЫ':'ВЕРХНЕЕ ВОСТОЧНОЕ КРЫЛО';
   if(floor===2){
     const section=col<13?0:col<27?1:col<40?2:3;
     const rowSection=row<9?0:row<18?1:row<26?2:3;
