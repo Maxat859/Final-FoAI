@@ -12,7 +12,7 @@ import {createDossierStore} from './surveillance/dossierStore.js';
 import {createDossierUI} from './ui/dossierUI.js';
 import {createTrainingLabUI} from './ui/trainingLabUI.js';
 import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities,dogEntities,securitySummary} from './game/liveWorld.js';
-import {formatPrisonClock,makePrisonClock,getRoutine} from './game/prisonSchedule.js';
+import {formatPrisonClock,makePrisonClock,getRoutine,advancePrisonClockByRealTime,REAL_DAY_MS} from './game/prisonSchedule.js';
 import {changeAlarm} from './game/alarm.js';
 import {adjacentDoor,findDoor,doorId,DIFFICULTY_LABEL} from './game/doorChallenges.js';
 import {makeEscortPath,GUARD_APPROACH,CLASSROOM_DESK} from './game/escort.js';
@@ -40,6 +40,7 @@ let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 let storyStage='wake',escorting=false,learningProgress=validateProgress(null),mistakeJournal=[];
 let moveAnimationToken=0;
 let patrolTimer=null;
+let lastTickTimestamp=null;
 let residents=createResidentRoster(worlds,DEFAULT_ENTITIES);
 function show(screen){
   for(const item of screens)item.hidden=item!==screen;
@@ -285,11 +286,15 @@ async function escortToMorningClass(){
 function startPrisonSimulation(){
   if(patrolTimer!==null)return;
   patrolTimer=window.setInterval(()=>{
+    const now=performance.now();
+    const elapsed=lastTickTimestamp===null?900:Math.max(0,Math.min(1150,now-lastTickTimestamp));
+    lastTickTimestamp=now; // Pauses never get counted when gameplay resumes.
     if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
        escorting||!['free','classroom'].includes(storyStage)||mission.finished)return;
     const was=getRoutine(live.clock).name;
     const beforeClock=live.clock;
-    const result=advanceLiveWorld(live,player,world,floor);
+    const clock=advancePrisonClockByRealTime(beforeClock,elapsed);
+    const result=advanceLiveWorld({...live,clock},player,world,floor,{minutesPerTick:0});
     live=result.state;alarm=live.alarm.value;
     handleNightChange(beforeClock);
     syncGuards();
@@ -387,7 +392,7 @@ function move(direction){
   },145);
   updateVision();
   const beforeClock=live.clock;
-  const simulation=advanceLiveWorld(live,player,world,floor);
+  const simulation=advanceLiveWorld(live,player,world,floor,{minutesPerTick:0});
   live=simulation.state;alarm=live.alarm.value;
   handleNightChange(beforeClock);
   syncGuards();
@@ -680,6 +685,6 @@ async function init(){
   render();
   startPrisonSimulation();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getNightPhase:()=>nightPhase(live.clock),getResidents:()=>structuredClone(residents),getInspectors:()=>entitiesByFloor[1].filter(e=>e.id.startsWith('rollcall-inspector')).map(e=>({row:e.row,col:e.col,moving:e.moving})),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};residents=updateResidents(residents,live.clock,worlds);syncResidents();updateVision();render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>(f===floor?visibleWorld():createNightWorld(worlds[f],f,live.clock))?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getNightPhase:()=>nightPhase(live.clock),getResidents:()=>structuredClone(residents),getInspectors:()=>entitiesByFloor[1].filter(e=>e.id.startsWith('rollcall-inspector')).map(e=>({row:e.row,col:e.col,moving:e.moving})),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),getDayLengthMs:()=>REAL_DAY_MS,setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};residents=updateResidents(residents,live.clock,worlds);syncResidents();updateVision();render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>(f===floor?visibleWorld():createNightWorld(worlds[f],f,live.clock))?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
