@@ -187,6 +187,7 @@ export function createSoundEngine({
     return {...settings,available:Boolean(AudioContextClass),ready:ctx?.state==='running',
       ambient:ambientOn,played,lastEvent};
   }
-  return {unlock,play,speak,setSettings,getSettings:()=>({...settings}),
+  function cancelSpeech(){try{speech?.cancel?.();}catch{}}
+  return {unlock,play,speak,cancelSpeech,setSettings,getSettings:()=>({...settings}),
     getState,startAmbient,stopAmbient,pause};
 }
