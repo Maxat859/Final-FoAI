@@ -30,6 +30,7 @@ function message(value){$('game-message').textContent=value;}
 function render(){
   renderer.frame({world,player,entities,seen,route,nightShade:clock.light});
   $('game-clock').textContent=clock.time;
+  $('game-weekday').textContent=`ДЕНЬ ${clock.dayNumber} · ${clock.weekday}`;
   $('day-phase').textContent=clock.phase;
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
