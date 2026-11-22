@@ -63,15 +63,20 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     if(x < -TILE||y < -TILE||x >= canvas.width||y >= canvas.height)return;
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+8,y+27,17,3);
     const playerSprite=highlight||entity.spriteId===ASSET_IDS.player;
-    const guardSprite=entity.role==='guard'||entity.role==='escort'||entity.role==='police'||entity.spriteId===ASSET_IDS.guard||entity.spriteId===ASSET_IDS.senior;
+    const guardSprite=entity.role==='guard'||entity.role==='escort'||entity.role==='police'||
+      entity.spriteId===ASSET_IDS.guard||entity.spriteId===ASSET_IDS.senior;
+    // All humans, including Arman, residents and classroom NPCs, use one style.
+    const humanSprite=playerSprite||guardSprite||entity.spriteId===ASSET_IDS.prisoner||
+      ['resident','mentor','npc','technician','analyst','witness'].includes(entity.role);
     if(entity.role==='dog'){
       drawDog(ctx,x,y,{facing:entity.facing,walkFrame:entity.walkFrame,moving:entity.moving});
-    }else if(playerSprite||guardSprite){
+    }else if(humanSprite){
       drawDirectionalCharacter(ctx,x,y,{
         facing:entity.facing||'down',
         walkFrame:entity.walkFrame??((entity.row+entity.col)%2),
         moving:Boolean(entity.moving||entity.animation==='walk'),
-        kind:entity.role==='police'?'police':guardSprite&&!playerSprite?'guard':'player'
+        characterId:entity.id||'',
+        kind:entity.role==='police'?'police':guardSprite?'guard':playerSprite?'player':'prisoner'
       });
     }else sprite(entity.spriteId||ASSET_IDS.player,x,y);
     if(entity.sleeping){
