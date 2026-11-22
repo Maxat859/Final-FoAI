@@ -213,6 +213,7 @@ export function restoreResidents(fresh,saved,worlds){
 }
 /** Move one tile per simulation update; never teleport on a shift transition. */
 /** One-tile, simultaneous NPC updates: occupants can trade places in tight halls. */
+let residentTurn=0;
 export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[]}={}){
   const phase=residentRoutine(clock);
   const key=(floor,row,col)=>floor+':'+row+','+col;
@@ -220,7 +221,7 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
     Number.isInteger(p.row)&&Number.isInteger(p.col)).map(p=>key(p.floor,p.row,p.col)));
   const held=new Map(current.map((p,i)=>[key(p.floor,p.row,p.col),i]));
   const desired=new Map(),claims=new Set();
-  const plans=current.map((p,i)=>{
+  const planOne=(p,i)=>{
     const target=p.stations?.[phase]||((phase==='sleep'||phase==='return')?p.home:p.day);
     const goal=target.row+','+target.col;
     const atGoal=p.row===target.row&&p.col===target.col;
@@ -247,8 +248,13 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
     claims.add(nextKey);
     desired.set(i,nextKey);
     return {goal,target,path,next};
-  });
-
+  };
+  const plans=Array(current.length);
+  const offset=residentTurn++%Math.max(1,current.length);
+  for(let index=0;index<current.length;index++){
+    const i=(index+offset)%current.length;
+    plans[i]=planOne(current[i],i);
+  }
   // A resident may enter another resident's tile only if that occupant
   // leaves in the same update. A dependency cycle is a valid simultaneous swap.
   const status=new Map(),stack=new Set();
