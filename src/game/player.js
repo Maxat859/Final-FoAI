@@ -10,7 +10,7 @@ export const DIRECTIONS=Object.freeze({
 
 // Opaque tiles block vision, but the wall itself is still visible.
 // Locked bars are not treated as solid walls for line of sight.
-const OPAQUE=new Set(['#']);
+const OPAQUE=new Set(['#','K','X']);
 function lineOfSight(world,startRow,startCol,endRow,endCol){
   let x=startCol,y=startRow;
   const dx=Math.abs(endCol-startCol),dy=Math.abs(endRow-startRow);
