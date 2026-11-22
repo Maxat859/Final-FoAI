@@ -80,6 +80,9 @@ function syncResidents(){
     else list.push(payload);
   }
 }
+function residentTilesOnCurrentFloor(){
+  return residents.filter(p=>p.floor===floor).map(p=>({row:p.row,col:p.col}));
+}
 function routineObstacles(){
   return [{floor,row:player.row,col:player.col},
     ...live.guards.map(g=>({floor:g.floor,row:g.y,col:g.x})),
@@ -304,7 +307,8 @@ function startPrisonSimulation(){
     const was=getRoutine(live.clock).name;
     const beforeClock=live.clock;
     const clock=advancePrisonClockByRealTime(beforeClock,elapsed);
-    const result=advanceLiveWorld({...live,clock},player,world,floor,{minutesPerTick:0});
+    const result=advanceLiveWorld({...live,clock},player,world,floor,
+      {minutesPerTick:0,occupiedTiles:residentTilesOnCurrentFloor()});
     live=result.state;alarm=live.alarm.value;
     handleNightChange(beforeClock);
     syncGuards();
@@ -402,7 +406,8 @@ function move(direction){
   },145);
   updateVision();
   const beforeClock=live.clock;
-  const simulation=advanceLiveWorld(live,player,world,floor,{minutesPerTick:0});
+  const simulation=advanceLiveWorld(live,player,world,floor,
+    {minutesPerTick:0,occupiedTiles:residentTilesOnCurrentFloor()});
   live=simulation.state;alarm=live.alarm.value;
   handleNightChange(beforeClock);
   syncGuards();
