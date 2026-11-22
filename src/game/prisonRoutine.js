@@ -11,12 +11,12 @@ const GUARD_TARGETS={
   guard2:{day:[5,25],night:[5,25]},
   guard3:{day:[12,6],night:[10,6]},
   guard4:{day:[16,10],night:[16,10]},
-  guard5:{day:[16,25],night:[16,27]}
+  guard5:{day:[15,25],night:[15,27]}
 };
 const PATROLS={
   guard1:[[10,19],[10,26]],
   guard3:[[12,3],[12,10]],
-  guard5:[[16,24],[16,28]]
+  guard5:[[15,24],[15,28]]
 };
 const patrolDirection=new Map();
 const SIDES=[[1,0],[-1,0],[0,1],[0,-1]];
