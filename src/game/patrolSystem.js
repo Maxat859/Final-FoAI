@@ -67,7 +67,20 @@ export function advanceK9Unit(unit,guards,world,clock){
   const owner=guards.find(g=>g.id===unit.handlerId);
   if(!owner||!staffOnDuty(owner,clock))return {...unit,moving:false};
   const distance=Math.abs(owner.x-unit.x)+Math.abs(owner.y-unit.y);
-  if(distance<=1)return {...unit,moving:false};
+  if(distance===0){
+    // Keep the human handler visible: never paint a dog over a police officer.
+    const behind={left:[1,0],right:[-1,0],up:[0,1],down:[0,-1]}[owner.facing]||[1,0];
+    const vectors=[behind,[1,0],[0,1],[-1,0],[0,-1]];
+    for(const [dx,dy] of vectors){
+      const nx=owner.x+dx,ny=owner.y+dy;
+      if(guardWalkable(world,nx,ny)&&!guards.some(g=>g.x===nx&&g.y===ny)){
+        return {...unit,x:nx,y:ny,moving:true,walkFrame:1-(unit.walkFrame||0),
+          facing:facingFromStep({row:unit.y,col:unit.x},{row:ny,col:nx},unit.facing)};
+      }
+    }
+    return {...unit,moving:false};
+  }
+  if(distance===1)return {...unit,moving:false};
   // Handler stays visible near their dog; no dog attacks are simulated.
   const route=planPatrol(world,{x:unit.x,y:unit.y},{x:owner.x,y:owner.y});
   if(route.length<2)return {...unit,moving:false};
