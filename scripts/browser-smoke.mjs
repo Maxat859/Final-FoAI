@@ -161,6 +161,59 @@ try{
   assert.equal(await page.locator('#game-screen').getAttribute('data-time-of-day'),'night');
   await page.screenshot({path:'/tmp/qamal-night-patrol.png',fullPage:true});
 
+  // 17:00 roll-call starts with a duty guard and returning residents.
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(16*60+55));
+  await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='17:00',
+    null,{timeout:6500});
+  await page.locator('#game-dialog').waitFor({state:'visible'});
+  assert.match(await page.locator('#dialog-inner').innerText(),/ПЕРЕКЛИЧКА/);
+  const inmates=await page.evaluate(()=>window.QAMAL_DEBUG.getResidents());
+  assert.ok(inmates.length>=25);
+  assert.ok(inmates.some(p=>p.moving));
+  await page.screenshot({path:'/tmp/qamal-night-rollcall.png',fullPage:true});
+  await page.locator('#game-dialog [data-close]').first().click();
+
+  // At 20:00 every resident goes to their cell, hero is returned to his own
+  // bed, and the night gate becomes a real solid iron barrier.
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(19*60+55));
+  await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='20:00',
+    null,{timeout:6500});
+  await page.locator('#game-dialog').waitFor({state:'visible'});
+  assert.match(await page.locator('#dialog-inner').innerText(),/ВОЗВРАЩЕНИЕ В КАМЕРЫ/);
+  const bedtime=await page.evaluate(()=>({
+    hero:window.QAMAL_DEBUG.getPosition(),
+    gate:window.QAMAL_DEBUG.getTile(9,6,1),
+    people:window.QAMAL_DEBUG.getResidents(),
+    phase:window.QAMAL_DEBUG.getNightPhase()
+  }));
+  assert.equal(bedtime.hero.row,10);
+  assert.equal(bedtime.hero.col,4);
+  assert.equal(bedtime.gate,'G');
+  assert.equal(bedtime.phase,'return');
+  assert.ok(bedtime.people.every(p=>p.row===p.home.row&&p.col===p.home.col));
+  await page.screenshot({path:'/tmp/qamal-night-cell-closed.png',fullPage:true});
+  await page.locator('#game-dialog [data-close]').first().click();
+
+  // The bedtime button skips to morning and re-opens all residential gates.
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(21*60+55));
+  await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='22:00',
+    null,{timeout:6500});
+  await page.locator('#game-dialog').waitFor({state:'visible'});
+  assert.match(await page.locator('#dialog-inner').innerText(),/ОТБОЙ/);
+  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getResidents())).every(p=>p.sleeping));
+  await page.screenshot({path:'/tmp/qamal-night-lightsout.png',fullPage:true});
+  await page.locator('#routine-sleep').click();
+  await page.locator('#morning-to-class').waitFor({state:'visible',timeout:6500});
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(9,6,1)),'.');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getNightPhase()),'wake');
+  assert.equal(await page.locator('#prison-clock').innerText(),'06:00');
+  await page.screenshot({path:'/tmp/qamal-morning-wakeup.png',fullPage:true});
+  await page.locator('#morning-to-class').click();
+  await page.locator('#learn-answer').waitFor({state:'visible',timeout:20000});
+  const classPosition=await page.evaluate(()=>window.QAMAL_DEBUG.getPosition());
+  assert.equal(classPosition.row,4);assert.equal(classPosition.col,15);
+  await page.locator('#game-dialog [data-close]').first().click();
+
   // Sound can be toggled at any time and its volume saved from Settings.
   await page.locator('#sound-toggle').click();
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
@@ -178,5 +231,5 @@ try{
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
   assert.deepEqual(errors,[],'No uncaught browser errors');
   await page.screenshot({path:'/tmp/qamal-game-browser-smoke.png',fullPage:true});
-  console.log('QAMAL browser walk: 104x72 prison, police dogs, autonomous patrol, night mode, story, study and audio — PASS');
+  console.log('QAMAL browser walk: mega prison, guards, roll-call, lockup, sleeping inmates, morning school, audio — PASS');
 }finally{await browser.close();}
