@@ -155,6 +155,8 @@ function startPrisonSimulation(){
     if(result.caught){resetAttempt();return;}
     const now=getRoutine(live.clock).name;
     if(now!==was)message('РАСПИСАНИЕ: '+now+'. Время '+formatPrisonClock(live.clock).time);
+    if(live.tick%14===0&&live.dogs?.some(d=>d.floor===floor&&
+      Math.abs(d.x-player.col)+Math.abs(d.y-player.row)<=5))audio.play('dog');
     render();
     if(live.tick%12===0)void persist();
   },900);
@@ -412,7 +414,11 @@ async function init(){
     position:()=>({row:player.row,col:player.col}),setRoute:value=>{route=value;render();},
     drawCamera:(target,cam)=>renderer.cameraPreview(target,world,entities,{
       'CAM-01':{row:3,col:25},'CAM-02':{row:11,col:21},'CAM-03':{row:16,col:18},
-      'CAM-04':{row:5,col:35},'CAM-05':{row:19,col:44}
+      'CAM-04':{row:5,col:35},'CAM-05':{row:19,col:44},
+      'CAM-06':{row:10,col:66},'CAM-07':{row:22,col:92},
+      'CAM-08':{row:47,col:20},'CAM-09':{row:38,col:94},
+      'CAM-10':{row:10,col:66},'CAM-11':{row:22,col:92},
+      'CAM-12':{row:47,col:20},'CAM-13':{row:38,col:94}
     }[cam]),
     drawMap:target=>{
       const context=target.getContext('2d'),cellW=target.width/COLS,cellH=target.height/ROWS;
