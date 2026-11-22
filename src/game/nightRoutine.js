@@ -283,8 +283,28 @@ export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[
     status.set(i,allowed);
     return allowed;
   }
+  const willMove=current.map((p,i)=>Boolean(plans[i].next)&&canMove(i));
+  // Final collision check: cancelling a blocked chain cannot put two
+  // characters on one tile, even when several yielding swaps interact.
+  let conflicts=true;
+  while(conflicts){
+    conflicts=false;
+    const destinations=new Map();
+    for(let i=0;i<current.length;i++){
+      const p=current[i];
+      const destination=willMove[i]?desired.get(i):key(p.floor,p.row,p.col);
+      const previous=destinations.get(destination);
+      if(previous!==undefined){
+        if(willMove[i])willMove[i]=false;
+        else if(willMove[previous])willMove[previous]=false;
+        conflicts=true;
+        break;
+      }
+      destinations.set(destination,i);
+    }
+  }
   return current.map((p,i)=>{
-    const plan=plans[i],moving=Boolean(plan.next)&&canMove(i);
+    const plan=plans[i],moving=willMove[i];
     const atHome=p.row===p.home.row&&p.col===p.home.col;
     if(!moving){
       const sleeping=phase==='sleep'&&atHome;
