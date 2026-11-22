@@ -186,7 +186,7 @@ export function expandComplex(map,floor){
   }
   // The old green exit becomes a security terminal; the real finale is far
   // beyond the yard, at the end of the service lane in the southern extension.
-  if(floor===1){map[29][45]='t';map[LAST_EXIT.row][LAST_EXIT.col]='E';}
+  if(floor===1){map[29][45]='.';map[28][45]='t';map[LAST_EXIT.row][LAST_EXIT.col]='E';}
   return map;
 }
 
@@ -212,7 +212,7 @@ export function expansionInteractions(floor){
     let row,col;
     if(room.type==='yard'){row=room.row+11;col=room.col+21;}
     else{row=room.row+room.height-2;col=room.col+Math.floor(room.width/2);}
-    return {id:room.id,row,col,floor,kind:interactions[room.type]||'room',
+    return {id:room.id,row,col,floor,type:room.type,kind:interactions[room.type]||'room',
       name:room.name,description:roomDescription(room)};
   });
 }
