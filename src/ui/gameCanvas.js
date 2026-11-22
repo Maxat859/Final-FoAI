@@ -28,7 +28,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     sprite(entity.spriteId||ASSET_IDS.player,x,y);
     if(highlight){ctx.lineWidth=2;ctx.strokeStyle='#f3c66a';ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);}
   }
-  function frame({world,player,entities=[],seen=new Set(),route=[]}){
+  function frame({world,player,entities=[],seen=new Set(),route=[],nightShade=0}){
     ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#070c13';ctx.fillRect(0,0,canvas.width,canvas.height);
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
       if(!seen.has(`${r},${c}`))continue;
@@ -43,6 +43,10 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     }
     for(const entity of entities)if(seen.has(`${entity.row},${entity.col}`))drawEntity(entity,false);
     drawEntity({...player,spriteId:ASSET_IDS.player},true);
+    if(nightShade>0){
+      ctx.fillStyle=`rgba(5,13,38,${Math.min(.55,nightShade)})`;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
     drawMini({world,player,entities,seen});
   }
   function drawMini({world,player,entities=[],seen=new Set()}){
