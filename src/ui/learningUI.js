@@ -111,6 +111,7 @@ export function createLearningUI(inner,handlers){
     if(!String(answer).trim()){showAnalysis(q,answer);return;}
     const result={correct:isCorrectLessonAnswer(q,answer)};
     if(result.correct){
+      handlers.playSound?.(taskIndex+1>=lesson().tasks.length?'complete':'success');
       attempts=0;answered=true;
       const next=taskIndex+1;
       if(next>=lesson().tasks.length){
@@ -128,6 +129,7 @@ export function createLearningUI(inner,handlers){
           '<button data-learn="next-task" class="learning-main-button">СЛЕДУЮЩЕЕ ЗАДАНИЕ →</button></div>');
       }
     }else{
+      handlers.playSound?.('error');
       attempts++;
       const details=diagnoseLessonError(q,answer,attempts);
       handlers.recordMistake?.({language,topic:lesson().title,location:heading(),codeSnippet:q.codeSnippet,
@@ -136,6 +138,7 @@ export function createLearningUI(inner,handlers){
     }
   }
   function explain(){
+    handlers.playSound?.('click');
     const q=lesson().tasks[taskIndex],answer=inner.querySelector('#learn-answer')?.value??'';
     if(String(answer).trim()&&!isCorrectLessonAnswer(q,answer)){
       handlers.recordMistake?.({language,topic:lesson().title,location:heading(),codeSnippet:q.codeSnippet,
