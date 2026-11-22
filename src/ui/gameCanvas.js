@@ -3,6 +3,8 @@ import {paintPrisonTile} from './prisonTextures.js';
 import {getCameraOffset} from '../game/camera.js';
 import {doorDifficulty,doorId} from '../game/doorChallenges.js';
 import {drawDirectionalCharacter} from './characterSprite.js';
+import {drawDog} from './dogSprite.js';
+import {lightLevel} from '../game/prisonSchedule.js';
 import {expansionInteractions} from '../game/complexExpansion.js';
 
 const TILE=TILE_SIZE;
@@ -61,13 +63,15 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     if(x < -TILE||y < -TILE||x >= canvas.width||y >= canvas.height)return;
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+8,y+27,17,3);
     const playerSprite=highlight||entity.spriteId===ASSET_IDS.player;
-    const guardSprite=entity.role==='guard'||entity.role==='escort'||entity.spriteId===ASSET_IDS.guard||entity.spriteId===ASSET_IDS.senior;
-    if(playerSprite||guardSprite){
+    const guardSprite=entity.role==='guard'||entity.role==='escort'||entity.role==='police'||entity.spriteId===ASSET_IDS.guard||entity.spriteId===ASSET_IDS.senior;
+    if(entity.role==='dog'){
+      drawDog(ctx,x,y,{facing:entity.facing,walkFrame:entity.walkFrame,moving:entity.moving});
+    }else if(playerSprite||guardSprite){
       drawDirectionalCharacter(ctx,x,y,{
         facing:entity.facing||'down',
         walkFrame:entity.walkFrame??((entity.row+entity.col)%2),
         moving:Boolean(entity.moving||entity.animation==='walk'),
-        kind:guardSprite&&!playerSprite?'guard':'player'
+        kind:entity.role==='police'?'police':guardSprite&&!playerSprite?'guard':'player'
       });
     }else sprite(entity.spriteId||ASSET_IDS.player,x,y);
     if(highlight){
@@ -75,7 +79,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
     }
   }
-  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},unlockedDoors=[],floor=1}){
+  function frame({world,player,entities=[],seen=new Set(),visible=new Set(),route=[],alarm=0,mission={},unlockedDoors=[],floor=1,clock}){
     const camera=getCameraOffset(player,world,viewportRows,viewportCols);
     const unlocked=new Set(unlockedDoors);
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -153,6 +157,27 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     aura.addColorStop(0,'rgba(241,192,92,.15)');aura.addColorStop(1,'rgba(241,192,92,0)');
     ctx.fillStyle=aura;ctx.fillRect(px-TILE*2,py-TILE*2,TILE*4,TILE*4);
     drawEntity({...player,spriteId:ASSET_IDS.player},camera,true);
+    // Day / dusk / night cycle: sunlit areas fade and lamps become important.
+    const darkness=lightLevel(clock);
+    if(darkness>.08){
+      const glow=ctx.createRadialGradient(px,py,TILE*.4,px,py,
+        Math.max(canvas.width,canvas.height)*.72);
+      glow.addColorStop(0,'rgba(3,9,22,'+(darkness*.18).toFixed(3)+')');
+      glow.addColorStop(.55,'rgba(2,10,26,'+(darkness*.62).toFixed(3)+')');
+      glow.addColorStop(1,'rgba(2,7,20,'+darkness.toFixed(3)+')');
+      ctx.fillStyle=glow;ctx.fillRect(0,0,canvas.width,canvas.height);
+      // Warm patches from visible prison lamps and outdoor perimeter lights.
+      for(let vr=0;vr<viewportRows;vr++)for(let vc=0;vc<viewportCols;vc++){
+        const rr=camera.row+vr,cc=camera.col+vc;
+        const tile=world[rr]?.[cc];
+        if(tile!=='L'||!visible.has(rr+','+cc))continue;
+        const cx=(vc+.5)*TILE,cy=(vr+.5)*TILE;
+        const lamp=ctx.createRadialGradient(cx,cy,4,cx,cy,TILE*2.7);
+        lamp.addColorStop(0,'rgba(255,210,130,.20)');
+        lamp.addColorStop(1,'rgba(255,210,130,0)');
+        ctx.fillStyle=lamp;ctx.fillRect(cx-TILE*3,cy-TILE*3,TILE*6,TILE*6);
+      }
+    }
     if(alarm>=60){
       ctx.strokeStyle='rgba(235,80,75,.65)';ctx.lineWidth=6;
       ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
@@ -177,8 +202,8 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       }
     }
     for(const entity of entities){
-      if(entity.role!=='guard'||!visible.has(entity.row+','+entity.col))continue;
-      miniCtx.fillStyle='#69a2d1';
+      if(!['guard','police','dog'].includes(entity.role)||!visible.has(entity.row+','+entity.col))continue;
+      miniCtx.fillStyle=entity.role==='dog'?'#d9ad70':entity.role==='police'?'#5279bd':'#69a2d1';
       miniCtx.fillRect(entity.col*dx,entity.row*dy,3,3);
     }
     miniCtx.strokeStyle='rgba(222,181,96,.9)';
