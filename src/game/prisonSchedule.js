@@ -1,8 +1,13 @@
 /** Fictional prison timetable; time advances when gameplay runs, not by wall clock. */
-export const START_TIME=6*60+30;
+export const START_TIME=6*60;
 export const MINUTES_PER_TICK=0; // NPC actions and player steps must not speed up the clock.
 export const REAL_DAY_MS=40*60*1000;
 export const GAME_MINUTES_PER_DAY=24*60;
+export const WEEKDAY_NAMES=Object.freeze(['ПОНЕДЕЛЬНИК','ВТОРНИК','СРЕДА','ЧЕТВЕРГ','ПЯТНИЦА','СУББОТА','ВОСКРЕСЕНЬЕ']);
+export function weekdayForDay(day){
+  const positive=Number.isInteger(day)&&day>0?day:1;
+  return WEEKDAY_NAMES[(positive-1)%WEEKDAY_NAMES.length];
+}
 export const REAL_MS_PER_GAME_MINUTE=REAL_DAY_MS/GAME_MINUTES_PER_DAY;
 export const SCHEDULE=[
   {from:0,name:'НОЧНАЯ ТИШИНА',phase:'night',duty:'night'},
@@ -51,7 +56,7 @@ export function getRoutine(clock){
 export function formatPrisonClock(clock){
   const {minutes,day}=makePrisonClock(clock);
   return {time:String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0'),
-    day, ...getRoutine(clock)};
+    day, weekday:weekdayForDay(day), ...getRoutine(clock)};
 }
 export function lightLevel(clock){
   const minutes=makePrisonClock(clock).minutes;
