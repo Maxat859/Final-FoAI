@@ -67,7 +67,7 @@ export function nearestInteraction(player,world,entities=[],floor=1){
     {row:3,col:25,kind:'cctv',name:'Пост CCTV'},
     {row:16,col:18,kind:'dossier',name:'Архив досье'}
   ];
-  targets.push(...entities.map(e=>({...e,kind:'npc'})));
+  targets.push(...entities.map(e=>({...e,kind:e.role==='dog'?'dog':'npc'})));
   return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||
     nearestExpansionInteraction(player,floor)||null;
 }
