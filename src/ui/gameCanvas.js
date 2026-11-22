@@ -162,9 +162,9 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     if(darkness>.08){
       const glow=ctx.createRadialGradient(px,py,TILE*.4,px,py,
         Math.max(canvas.width,canvas.height)*.72);
-      glow.addColorStop(0,'rgba(3,9,22,'+(darkness*.18).toFixed(3)+')');
-      glow.addColorStop(.55,'rgba(2,10,26,'+(darkness*.62).toFixed(3)+')');
-      glow.addColorStop(1,'rgba(2,7,20,'+darkness.toFixed(3)+')');
+      glow.addColorStop(0,'rgba(3,9,22,'+(darkness*.38).toFixed(3)+')');
+      glow.addColorStop(.55,'rgba(2,10,26,'+(darkness*.85).toFixed(3)+')');
+      glow.addColorStop(1,'rgba(2,7,20,'+Math.min(.82,darkness*1.12).toFixed(3)+')');
       ctx.fillStyle=glow;ctx.fillRect(0,0,canvas.width,canvas.height);
       // Warm patches from visible prison lamps and outdoor perimeter lights.
       for(let vr=0;vr<viewportRows;vr++)for(let vc=0;vc<viewportCols;vc++){
