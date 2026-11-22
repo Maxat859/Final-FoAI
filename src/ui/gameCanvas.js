@@ -3,9 +3,11 @@ import {paintPrisonTile} from './prisonTextures.js';
 import {getCameraOffset} from '../game/camera.js';
 import {doorDifficulty,doorId} from '../game/doorChallenges.js';
 import {drawDirectionalCharacter} from './characterSprite.js';
+import {expansionInteractions} from '../game/complexExpansion.js';
 
 const TILE=TILE_SIZE;
 const ICONS={'#':ASSET_IDS.wall,D:ASSET_IDS.door,B:ASSET_IDS.bars,b:ASSET_IDS.bed,d:ASSET_IDS.desk,t:ASSET_IDS.terminal,c:ASSET_IDS.camera,E:ASSET_IDS.exit};
+const EXPANSION_HOTSPOTS={1:expansionInteractions(1),2:expansionInteractions(2)};
 const TARGETS=[
   {row:4,col:16,key:'learned'},
   {row:11,col:26,key:'lockOpen'},
@@ -115,6 +117,16 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       ctx.fillStyle='#09111b';ctx.font='bold 8px monospace';ctx.fillText(completed?'✓':'!',x+25,y+8);
     }
 
+    // New rooms expose actual interactive facilities, not empty scenery.
+    for(const point of EXPANSION_HOTSPOTS[floor]){
+      if(!visible.has(point.row+','+point.col))continue;
+      const x=(point.col-camera.col)*TILE,y=(point.row-camera.row)*TILE;
+      if(x<0||y<0||x>=canvas.width||y>=canvas.height)continue;
+      ctx.fillStyle=point.kind==='room'?'#9bb7af':'#f4cb83';
+      ctx.fillRect(x+22,y+3,8,9);
+      ctx.fillStyle='#182b37';ctx.font='bold 8px monospace';
+      ctx.fillText(point.kind==='room'?'i':'!',x+24,y+10);
+    }
     for(const [label,col,row] of roomLabelsFor(floor)){
       if(!visible.has(row+','+col))continue;
       const x=(col-camera.col)*TILE,y=(row-camera.row)*TILE;
@@ -155,7 +167,7 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
       const key=r+','+c;
       if(!seen.has(key))continue;
       const symbol=world[r][c];
-      miniCtx.fillStyle=symbol==='#'||symbol==='B'?'#536c7b':
+      miniCtx.fillStyle=symbol==='#'||symbol==='K'||symbol==='F'||symbol==='B'?'#536c7b':
         symbol==='E'?'#65c5a2':symbol==='D'?'#ab9d77':'#304657';
       const x=Math.floor(c*dx),y=Math.floor(r*dy);
       miniCtx.fillRect(x,y,Math.ceil(dx)+1,Math.ceil(dy)+1);
