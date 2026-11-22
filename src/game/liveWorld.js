@@ -80,10 +80,15 @@ export function advanceLiveWorld(previous,player,world,floor=1,options={}){
       description:'Режим тюрьмы: '+routine.name});
   }
   const isBlocked=(x,y)=>blocked(world,x,y);
+  const residentTiles=new Set((Array.isArray(options.occupiedTiles)?options.occupiedTiles:[])
+    .filter(p=>Number.isInteger(p?.row)&&Number.isInteger(p?.col))
+    .map(p=>p.row+','+p.col));
   let alarm=previous.alarm;
   const guards=previous.guards.map(g=>{
     if((g.floor??1)!==floor)return g;
     let next=nextPatrol(g,world,clock);
+    if(residentTiles.has(next.y+','+next.x))
+      next={...next,x:g.x,y:g.y,moving:false,animation:'idle',pathSteps:[]};
     // A scheduled patrol doesn't walk through the protagonist. This also
     // avoids instant capture from a guard moving into a stationary player.
     if(next.x===player.col&&next.y===player.row)
@@ -101,8 +106,12 @@ export function advanceLiveWorld(previous,player,world,floor=1,options={}){
     }
     return {...next,state:'patrol'};
   });
-  const dogs=(previous.dogs||[]).map(unit=>
-    unit.floor===floor?advanceK9Unit(unit,guards,world,clock):unit);
+  const dogs=(previous.dogs||[]).map(unit=>{
+    if(unit.floor!==floor)return unit;
+    const next=advanceK9Unit(unit,guards,world,clock);
+    return residentTiles.has(next.y+','+next.x)?
+      {...unit,moving:false}:next;
+  });
 
   // Cameras signal fictional alarms only near their current-floor sensors.
   for(const cam of CAMERAS){
