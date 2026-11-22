@@ -100,7 +100,7 @@ function render(){
 }
 async function persist(){
   await storage.set('progress',{
-    mapVersion:3,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
+    mapVersion:4,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
     seenByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...seenByFloor[f]]])),
     unlockedByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...unlockedByFloor[f]]])),
     seen:[...seenByFloor[1]],unlockedDoors:[...unlockedByFloor[1]]
@@ -172,8 +172,11 @@ function interact(){
   const target=nearestInteraction(player,world,entities,floor);
   if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
   if(target.kind==='npc'){void panels.open('npc',target);return;}
-  const mapping={classroom:'classroom',library:'library',lock:'lock',cctv:'cctv',dossier:'dossiers'};
+  const mapping={classroom:'classroom',library:'library',lock:'lock',cctv:'cctv',
+    dossier:'dossiers',dossiers:'dossiers',code:'code',bayes:'bayes',
+    tactical:'tactical',planner:'planner'};
   if(mapping[target.kind])void panels.open(mapping[target.kind]);
+  else if(target.kind==='room')void panels.open('room-info',target);
   else message('Нажми E возле отмеченного объекта.');
 }
 function move(direction){
@@ -313,7 +316,7 @@ async function init(){
       ?values.filter(x=>typeof x==='string'&&/^\d+,\d+$/.test(x)): [];
     const validDoors=values=>Array.isArray(values)
       ?values.filter(x=>typeof x==='string'&&/^\d+:\d+$/.test(x)): [];
-    if(previous.mapVersion===3){
+    if(previous.mapVersion===3||previous.mapVersion===4){
       for(const f of FLOORS){
         seenByFloor[f]=new Set(validCells(previous.seenByFloor?.[f]));
         unlockedByFloor[f]=new Set(validDoors(previous.unlockedByFloor?.[f]));
@@ -333,7 +336,7 @@ async function init(){
     live=restoreLiveWorld(previous.live);
     live={...live,alarm:changeAlarm(live.alarm,alarm-live.alarm.value)};
     // Show the new wake-up scene once to players migrating old saves too.
-    introSeen=Boolean(previous.introSeen&&previous.mapVersion===3);
+    introSeen=Boolean(previous.introSeen&&(previous.mapVersion===3||previous.mapVersion===4));
     learningProgress=validateProgress(previous.learningProgress);
     mistakeJournal=Array.isArray(previous.mistakeJournal)?previous.mistakeJournal.slice(-45):[];
     const stored=previous.storyStage;
