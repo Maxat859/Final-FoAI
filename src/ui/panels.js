@@ -61,14 +61,19 @@ export function createPanels(dialog,handlers){
   }
 
   function shell(title,content,tag='QAMAL / INTERACTIVE'){return `<div class="panel-top"><div><div class="section-kicker">${tag}</div><h2>${title}</h2></div><button class="icon-btn" data-close aria-label="Закрыть">✕</button></div>${content}`;}
-  function close(){if(npcTimer)clearInterval(npcTimer);npcTimer=null;learningUI.close();dialog.classList.remove('npc-open');dialog.hidden=true;active=null;}
-  async function open(name,data=null){active=name;dialog.hidden=false;dialog.classList.toggle('npc-open',name==='npc');inner.scrollTop=0;
+  function close(){if(npcTimer)clearInterval(npcTimer);npcTimer=null;handlers.stopVoice?.();learningUI.close();dialog.classList.remove('npc-open');dialog.hidden=true;active=null;}
+  async function open(name,data=null){
+    active=name;dialog.hidden=false;dialog.classList.toggle('npc-open',name==='npc');inner.scrollTop=0;
+    if(name!=='npc'&&name!=='wake')handlers.playSound?.(name==='door'?'bars':'click');
     if(name==='door'){selectedDoor=data;doorAttempt=0;doorLanguage=handlers.language();await ensureExtraBank();drawDoor();}
-    if(name==='npc'){npcId=data?.id??null;npcScript=getNpcScript(data);npcIndex=0;renderNpc();}
+    if(name==='npc'){npcId=data?.id??null;npcScript=getNpcScript(data);npcIndex=0;handlers.playSound?.('dialogue');renderNpc();}
     if(['classroom','library','mentor'].includes(name))learningUI.open(name,{language:handlers.language()});
-    if(name==='guard-arrival')inner.innerHTML=shell('ПРИКАЗ / УЧЕБНЫЙ КЛАСС',
+    if(name==='guard-arrival'){
+      handlers.speak?.('Ерасыл, подъём. Сегодня ты идёшь на учебное занятие. Я провожу тебя до класса.');
+      inner.innerHTML=shell('ПРИКАЗ / УЧЕБНЫЙ КЛАСС',
       '<div class="guard-story"><img src="./assets/portraits/guard.svg" alt="Портрет охранника">'+
       '<div><h3>Охранник у камеры</h3><p>«Ерасыл, подъём. Сегодня ты идёшь на учебное занятие. Выбрал Python или Go? Я провожу тебя до класса. На маршруте двери открою служебным пропуском.»</p>'+      '<p class="panel-note">Следуй за охранником. Камера покажет весь путь до учебной комнаты.</p></div></div>'+      '<button id="escort-start" class="learning-main-button">ИДТИ С ОХРАННИКОМ →</button>',      'STORY / ESCORT');
+    }
     if(name==='wake')inner.innerHTML=shell('ГЛАВА 01 — ПРОБУЖДЕНИЕ',
       '<div class="wake-scene">'+
       '<div class="wake-portrait"><img src="./assets/portraits/erasyl.svg" alt="Ерасыл просыпается"></div>'+
@@ -213,6 +218,7 @@ export function createPanels(dialog,handlers){
     npcTimer=null; npcFullyTyped=false;
     if(npcIndex>=npcScript.length){close();return;}
     const [speaker,phrase]=npcScript[npcIndex];
+    handlers.speak?.(phrase);
     const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard'})[speaker]||'default';
     const portrait=handlers.portraitFor?.(portraitId)||'./assets/characters/prisoners/prisoner.png';
     inner.innerHTML='<div class="npc-dialog">'+
@@ -226,6 +232,7 @@ export function createPanels(dialog,handlers){
     npcTimer=setInterval(()=>{
       length=Math.min(phrase.length,length+2);
       el.textContent=phrase.slice(0,length);
+      if(length%12===0&&!handlers.soundState?.()?.voice)handlers.playSound?.('dialogue');
       if(length===phrase.length){clearInterval(npcTimer);npcTimer=null;npcFullyTyped=true;}
     },20);
   }
@@ -284,6 +291,7 @@ export function createPanels(dialog,handlers){
           '<button data-close>ПРОДОЛЖИТЬ ИГРУ →</button>',
           'QAMAL / CHECKPOINT COMPLETE');
       }else{
+        handlers.playSound?.('error');
         const key=mistakeKey(doorQuestion,'door'),attempt=(failures.get(key)||0)+1;
         failures.set(key,attempt);recordQuestionError(doorQuestion,answer,'Дверь '+selectedDoor.id);
         feedback.innerHTML='<p>Неправильный ответ — разберём, почему.</p>'+
@@ -299,9 +307,11 @@ export function createPanels(dialog,handlers){
       if(!answer?.trim()){feedback.textContent='Сначала введи ответ.';return;}
       const result=checkAnswer(currentQuestion,answer);
       if(result.correct){
+        handlers.playSound?.('success');
         feedback.innerHTML='<p>'+esc(result.feedback)+'</p>';
         handlers.mark('learned');
       }else{
+        handlers.playSound?.('error');
         const key=mistakeKey(currentQuestion,'practice'),attempt=(failures.get(key)||0)+1;
         failures.set(key,attempt);recordQuestionError(currentQuestion,answer,'Тренировочный терминал');
         feedback.innerHTML=questionReview(currentQuestion,answer,attempt>=2);
@@ -318,7 +328,7 @@ export function createPanels(dialog,handlers){
     if(id==='lock-check'){const m=handlers.getPuzzleModule(),fb=inner.querySelector('#lock-result');if(!m){fb.textContent='Модуль CSP пока не подключён.';return;}
       const attempt=Object.fromEntries(['A','B','C','D'].map(k=>[k,inner.querySelector('#lock-'+k).value]));
       const result=m.checkLockAttempt(m.createSecurityLockPuzzle(),attempt);fb.textContent=result.message;
-      if(result.unlocked)handlers.mark('lockOpen');else handlers.raiseAlarm(8);return;
+      if(result.unlocked)handlers.mark('lockOpen');else {handlers.playSound?.('error');handlers.raiseAlarm(8);}return;
     }
     if(id==='camera-visit'){handlers.mark('visitedCCTV');inner.querySelector('#camera-status').textContent='CCTV изучено — этап зачтён.';return;}
     if(id==='search-run'){const out=inner.querySelector('#search-result');try{const m=await import('../algorithms/search.js');

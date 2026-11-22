@@ -393,3 +393,22 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
   .guard-story img{width:76px;height:76px}
   .guard-story p{font-size:11px}
 }
+
+
+/* QAMAL V5 — audio settings and a sound button that stays out of the map. */
+.audio-settings{margin:18px 0 16px;padding:15px 18px;border:2px solid #587b8b;background:rgba(12,31,46,.92);min-width:0;color:#d6e6eb}
+.audio-settings legend{padding:0 8px;color:#f2cf8a;font:800 12px/1.4 Consolas,monospace;letter-spacing:.09em}
+.audio-check{display:flex!important;align-items:flex-start;gap:9px;margin:12px 0!important;color:#d8e7eb;font:12px/1.5 Consolas,monospace;cursor:pointer}
+.audio-check input{margin:3px 0 0;accent-color:#e6bf79;flex-shrink:0;width:16px;height:16px}
+.audio-range{display:flex!important;justify-content:space-between;gap:8px;font:700 11px/1.3 Consolas,monospace;color:#b8cfd9;margin:15px 0 7px!important}
+.audio-range output{color:#f4cd90}
+#audio-volume{display:block;accent-color:#efbf75;width:100%;height:18px;cursor:pointer}
+#audio-volume:disabled{opacity:.5;cursor:not-allowed}
+.audio-help{font:11px/1.5 Consolas,monospace;color:#9fb6c5;margin:12px 0 2px}
+#sound-toggle{font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif!important;font-size:20px!important;line-height:1;border-color:#b3a078}
+#sound-toggle[aria-pressed="false"]{opacity:.65;border-color:#536a7a}
+@media(max-width:620px){
+ .hud-pills{gap:3px}
+ #sound-toggle{min-width:34px;min-height:39px;font-size:18px!important}
+ .audio-settings{padding:11px 12px;margin:12px 0}
+}

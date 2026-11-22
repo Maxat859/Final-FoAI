@@ -2,6 +2,7 @@ import {ASSET_IDS,COLS,roomLabelsFor,ROWS,TILE_SIZE,VIEW_COLS,VIEW_ROWS} from '.
 import {paintPrisonTile} from './prisonTextures.js';
 import {getCameraOffset} from '../game/camera.js';
 import {doorDifficulty,doorId} from '../game/doorChallenges.js';
+import {drawDirectionalCharacter} from './characterSprite.js';
 
 const TILE=TILE_SIZE;
 const ICONS={'#':ASSET_IDS.wall,D:ASSET_IDS.door,B:ASSET_IDS.bars,b:ASSET_IDS.bed,d:ASSET_IDS.desk,t:ASSET_IDS.terminal,c:ASSET_IDS.camera,E:ASSET_IDS.exit};
@@ -57,7 +58,16 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
     const x=(entity.col-camera.col)*TILE,y=(entity.row-camera.row)*TILE;
     if(x < -TILE||y < -TILE||x >= canvas.width||y >= canvas.height)return;
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+8,y+27,17,3);
-    sprite(entity.spriteId||ASSET_IDS.player,x,y);
+    const playerSprite=highlight||entity.spriteId===ASSET_IDS.player;
+    const guardSprite=entity.role==='guard'||entity.role==='escort'||entity.spriteId===ASSET_IDS.guard||entity.spriteId===ASSET_IDS.senior;
+    if(playerSprite||guardSprite){
+      drawDirectionalCharacter(ctx,x,y,{
+        facing:entity.facing||'down',
+        walkFrame:entity.walkFrame??((entity.row+entity.col)%2),
+        moving:Boolean(entity.moving||entity.animation==='walk'),
+        kind:guardSprite&&!playerSprite?'guard':'player'
+      });
+    }else sprite(entity.spriteId||ASSET_IDS.player,x,y);
     if(highlight){
       ctx.lineWidth=2;ctx.strokeStyle='#f3c66a';
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);

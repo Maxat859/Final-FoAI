@@ -16,12 +16,15 @@ import {changeAlarm} from './game/alarm.js';
 import {adjacentDoor,findDoor,doorId,DIFFICULTY_LABEL} from './game/doorChallenges.js';
 import {makeEscortPath,GUARD_APPROACH,CLASSROOM_DESK} from './game/escort.js';
 import {validateProgress} from './education/curriculum.js';
+import {createSoundEngine,sanitizeAudioSettings} from './audio/soundEngine.js';
+import {facingFromStep} from './ui/characterSprite.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
 const canvas=$('game-canvas'),mini=$('mini-map');
 const assets={images:new Map(),manifest:null};
 const renderer=createRenderer(canvas,mini,assets);
+const audio=createSoundEngine();
 const worlds={1:createLevel(1),2:createLevel(2)};
 const entitiesByFloor=Object.fromEntries(FLOORS.map(f=>[f,DEFAULT_ENTITIES.filter(e=>(e.floor||1)===f).map(e=>({...e}))]));
 let floor=1,world=worlds[1],entities=entitiesByFloor[1];
@@ -31,7 +34,34 @@ let player={...START_POSITION},seen=seenByFloor[1],visible=new Set(),mission={..
 let unlockedDoors=unlockedByFloor[1];
 let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 let storyStage='wake',escorting=false,learningProgress=validateProgress(null),mistakeJournal=[];
-function show(screen){for(const item of screens)item.hidden=item!==screen;}
+let moveAnimationToken=0;
+function show(screen){
+  for(const item of screens)item.hidden=item!==screen;
+  if(screen===$('main-menu')||screen===$('settings-screen'))audio.stopAmbient();
+}
+function updateAudioControls(){
+  const settings=audio.getSettings();
+  const soundButton=$('sound-toggle');
+  if(soundButton){
+    soundButton.textContent=settings.enabled?'🔊':'🔇';
+    soundButton.title=settings.enabled?'Выключить звуки':'Включить звуки';
+    soundButton.setAttribute('aria-label',soundButton.title);
+    soundButton.setAttribute('aria-pressed',String(settings.enabled));
+  }
+  $('audio-enabled').checked=settings.enabled;
+  $('audio-volume').value=String(Math.round(settings.volume*100));
+  $('audio-volume-value').textContent=String(Math.round(settings.volume*100))+'%';
+  $('audio-volume').disabled=!settings.enabled;
+  $('audio-voice').checked=settings.voice;
+  $('audio-voice').disabled=!settings.enabled;
+  $('audio-info').textContent=audio.getState().available
+    ?'Звуки запускаются после нажатия «Начать игру». Озвучка зависит от голосов в браузере.'
+    :'Этот браузер не поддерживает Web Audio. Игра продолжит работать без звуков.';
+}
+function configureAudio(next){
+  audio.setSettings(next);updateAudioControls();
+  void storage.set('audioSettings',audio.getSettings());
+}
 function message(value){$('game-message').textContent=value;}
 function updateVision(){
   visible=computeFieldOfView(world,player.row,player.col);
@@ -80,10 +110,12 @@ function mark(key){
   mission=markMission(mission,key);
   if(key==='lockOpen'){worlds[1][11][14]='D';unlockedByFloor[1].add(doorId(11,14));updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
   else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
+  audio.play(key==='finished'?'complete':'success');
   render();void persist();
 }
 function unlockDoor(door){
   unlockedDoors.add(door.id);
+  audio.play('door');audio.play('success');
   if(!mission.learned)mark('learned');
   message('ДВЕРЬ '+door.id+' ОТКРЫТА! Вернись на карту и пройди дальше.');
   render();void persist();
@@ -111,27 +143,32 @@ function changeFloor(){
   const next=floor===1?2:1;
   activateFloor(next);
   // Paired staircases have the same coordinates, so the character arrives safely.
+  audio.play('stairs');
   message('ЛЕСТНИЦА: ЭТАЖ '+floor+'. Ты в зоне «'+zoneAt(player.row,player.col,floor)+'». Исследуй новый уровень.');
   render();void persist();return true;
 }
 function resetAttempt(){
   live=releaseAfterCheckpoint(live);alarm=live.alarm.value;player={...START_POSITION};
   activateFloor(1);syncGuards();route=[];
+  audio.play('alarm');
   message('Тревога достигла предела! Герой вернулся к контрольной точке. Пройденные задания сохранены.');
   render();void persist();
 }
 function raiseAlarm(value){
+  const previous=alarm;
   live={...live,alarm:changeAlarm(live.alarm,value)};alarm=live.alarm.value;
+  if(previous<40&&alarm>=40)audio.play('alarm');
   if(alarm>=100){resetAttempt();return;}
   render();void persist();
 }
 function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
   if(escorting)return;
+  audio.play('click');
   if(storyStage==='guard'){void panels.open('guard-arrival');return;}
   if(stairAtPlayer()){changeFloor();return;}
   const door=adjacentDoor(world,player,unlockedDoors);
-  if(door){void panels.open('door',door);return;}
+  if(door){audio.play('bars');void panels.open('door',door);return;}
   const target=nearestInteraction(player,world,entities,floor);
   if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
   if(target.kind==='npc'){void panels.open('npc',target);return;}
@@ -141,15 +178,24 @@ function interact(){
 }
 function move(direction){
   if(escorting)return;
+  // Turning also works when walking into a wall or a locked gate.
+  const facing=direction[2]||player.facing;
+  if(player.facing!==facing){player={...player,facing};render();}
   const targetRow=player.row+direction[0],targetCol=player.col+direction[1];
   const door=findDoor(world,targetRow,targetCol);
   if(door&&!unlockedDoors.has(door.id)){
+    audio.play('bars');
     message('Закрытая дверь: '+DIFFICULTY_LABEL[door.difficulty]+'. Реши задание, чтобы пройти.');
     void panels.open('door',door);return;
   }
   const outcome=attemptMove(player,direction,world,entities);
-  if(!outcome.moved){message(outcome.reason);return;}
-  player=outcome.player;
+  if(!outcome.moved){audio.play('blocked');message(outcome.reason);render();return;}
+  player={...outcome.player,moving:true,walkFrame:((player.walkFrame??0)+1)%2};
+  audio.play('step');
+  const token=++moveAnimationToken;
+  window.setTimeout(()=>{
+    if(token===moveAnimationToken){player={...player,moving:false};render();}
+  },145);
   updateVision();
   const simulation=advanceLiveWorld(live,player,world,floor);
   live=simulation.state;alarm=live.alarm.value;
@@ -184,10 +230,14 @@ async function guardArrives(){
   unlockedByFloor[1].add(doorId(8,6));
   message('Звенят ключи. Охранник открывает решётку и подходит к твоей камере...');
   render();
+  audio.play('bars');
   for(const p of GUARD_APPROACH){
+    guard.facing=facingFromStep(guard,p,guard.facing);
     guard.row=p.row;guard.col=p.col;
-    render();await sleep(220);
+    guard.walkFrame=(guard.walkFrame??0)+1;guard.moving=true;
+    audio.play('step');render();await sleep(220);
   }
+  guard.moving=false;audio.play('guard');
   escorting=false;
   await persist();
   await panels.open('guard-arrival');
@@ -202,9 +252,16 @@ async function beginEscort(){
       const point=passage.path[i],ahead=passage.path[Math.min(i+1,passage.path.length-1)];
       if(world[point.row][point.col]==='D')unlockedDoors.add(doorId(point.row,point.col));
       if(world[ahead.row][ahead.col]==='D')unlockedDoors.add(doorId(ahead.row,ahead.col));
+      const previousGuard={row:guard.row,col:guard.col};
+      guard.facing=facingFromStep(previousGuard,ahead,guard.facing);
       guard.row=ahead.row;guard.col=ahead.col;
+      guard.walkFrame=(guard.walkFrame??0)+1;guard.moving=true;
+      const nextFacing=facingFromStep(player,point,player.facing);
       player={...player,row:point.row,col:point.col,
-        facing:i+1<passage.path.length?(passage.path[i+1].col>point.col?'right':'up'):'right',steps:player.steps+1};
+        facing:nextFacing,moving:true,walkFrame:((player.walkFrame??0)+1)%2,
+        steps:player.steps+1};
+      audio.play('step');
+      if(world[point.row][point.col]==='D')audio.play('door');
       updateVision();
       route=passage.path.slice(i,Math.min(i+4,passage.path.length));
       if(i===4)message('Охранник открыл дверь служебным пропуском. Двигайся к учебному классу.');
@@ -221,7 +278,8 @@ async function beginEscort(){
   }finally{
     const guardIndex=entitiesByFloor[1].findIndex(e=>e.id==='escort-story');
     if(guardIndex>=0)entitiesByFloor[1].splice(guardIndex,1);
-    storyStage='classroom';escorting=false;route=[];render();
+    storyStage='classroom';escorting=false;route=[];player={...player,moving:false};render();
+    audio.play('lesson');
     await persist();await panels.open('classroom');
   }
 }
@@ -307,6 +365,8 @@ async function init(){
     getProgress:()=>learningProgress,getMistakes:()=>mistakeJournal,
     onLessonComplete:onLessonCompleted,recordMistake,
     onWake:()=>{void guardArrives();},onEscortStart:()=>{void beginEscort();},
+    playSound:event=>audio.play(event),speak:text=>audio.speak(text),stopVoice:()=>audio.cancelSpeech(),
+    soundState:()=>audio.getState(),
     mark,raiseAlarm,unlockDoor,
     portraitFor:(person)=>{
       const named=new Set(['erasyl','arman','ruslan','guard','daniyar','madina','timur']);
@@ -340,6 +400,7 @@ async function init(){
     setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
   });
   $('play-btn').addEventListener('click',()=>{
+    void audio.unlock().then(ok=>{if(ok)audio.play(storyStage==='wake'?'wake':'click');});
     show($('game-screen'));$('tools-popup').hidden=true;renderer.resize();render();
     message('Этаж '+floor+'. Основы языков доступны в классе, библиотеке и у Армана.');
     if(storyStage==='wake'){
@@ -353,11 +414,28 @@ async function init(){
     await storage.set('progress',null);
     window.location.reload();
   });
-  $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
+  $('settings-btn').addEventListener('click',()=>{audio.play('click');show($('settings-screen'));});
+  $('audio-enabled').addEventListener('change',event=>{
+    configureAudio({enabled:event.target.checked});
+    if(event.target.checked)void audio.unlock().then(ok=>{if(ok)audio.play('click');});
+  });
+  $('audio-volume').addEventListener('input',event=>{
+    configureAudio({volume:Number(event.target.value)/100});
+  });
+  $('audio-voice').addEventListener('change',event=>{
+    configureAudio({voice:event.target.checked});
+  });
+  $('sound-toggle').addEventListener('click',()=>{
+    const next=!audio.getSettings().enabled;
+    configureAudio({enabled:next});
+    if(next)void audio.unlock().then(ok=>{if(ok)audio.play('click');});
+  });
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
   $('exit-btn').addEventListener('click',()=>show($('main-menu')));
   $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
   const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
+  audio.setSettings(sanitizeAudioSettings(await storage.get('audioSettings',null)));
+  updateAudioControls();
   $('panel-actions').addEventListener('click',event=>{
     const button=event.target.closest('[data-panel]');
     if(button){$('tools-popup').hidden=true;void panels.open(button.dataset.panel);}
@@ -394,6 +472,6 @@ async function init(){
   });
   render();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
