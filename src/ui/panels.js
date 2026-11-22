@@ -124,7 +124,7 @@ export function createPanels(dialog,handlers){
     if(name==='wake')inner.innerHTML=shell('ГЛАВА 01 — ПРОБУЖДЕНИЕ',
       '<div class="wake-scene">'+
       '<div class="wake-portrait"><img src="./assets/portraits/erasyl.svg" alt="Ерасыл просыпается"></div>'+
-      '<div class="scene-number">06:30 / ТЮРЕМНЫЙ КОРПУС / КАМЕРА 01</div>'+
+      '<div class="scene-number">06:00 / ТЮРЕМНЫЙ КОРПУС / КАМЕРА 01</div>'+
       '<h3>Шум металлической решётки.</h3>'+
       '<p>Ерасыл проснулся на нижней койке. Холодный бетон, мерцающая лампа и шаги за дверью. Рядом — раковина, шкафчик и тюремный санузел.</p>'+
       '<p>На дверях стоят учебные терминалы. Решай задания на Python или Go, чтобы открыть доступ к другим помещениям.</p>'+
