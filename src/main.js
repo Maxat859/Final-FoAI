@@ -4,6 +4,7 @@ import {ASSET_IDS,COLS,DEFAULT_ENTITIES,ROWS,TILE_SIZE,createLevel,zoneAt} from 
 import {START_POSITION,DIRECTIONS,discover,attemptMove,nearestInteraction} from './game/player.js';
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
 import {createStorage} from './storage/indexedDb.js';
+import {createClock,HOUR_MS} from './game/clock.js';
 import {loadAssetManifest} from './ui/assetLoader.js';
 import {createRenderer} from './ui/gameCanvas.js';
 import {createPanels} from './ui/panels.js';
@@ -18,12 +19,16 @@ const assets={images:new Map(),manifest:null};
 const renderer=createRenderer(canvas,mini,assets);
 const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
 const storage=createStorage();
+const clock=createClock(6*HOUR_MS);
+let lastFrameTime=null;
 let player={...START_POSITION},seen=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
 let cspModule=null,panels=null;
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
 function message(value){$('game-message').textContent=value;}
 function render(){
-  renderer.frame({world,player,entities,seen,route});
+  renderer.frame({world,player,entities,seen,route,nightShade:clock.light});
+  $('game-clock').textContent=clock.time;
+  $('day-phase').textContent=clock.phase;
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
@@ -32,7 +37,7 @@ function render(){
   $('objective').textContent=objective(mission);
   $('mission-progress').textContent=`${OBJECTIVES.filter(([key])=>mission[key]).length} / ${OBJECTIVES.length}`;
 }
-async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm});}
+async function persist(){await storage.set('progress',{player,seen:[...seen],mission,alarm,elapsedMs:clock.elapsedMs});}
 function mark(key){mission=markMission(mission,key);message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);render();void persist();}
 function raiseAlarm(value){alarm=Math.min(100,alarm+value);render();void persist();}
 function updateAssets(msg){$('asset-status').textContent=msg;}
@@ -61,6 +66,8 @@ async function init(){
     if(Array.isArray(previous.seen))seen=new Set(previous.seen.filter(x=>typeof x==='string'));
     mission={...DEFAULT_MISSION,...previous.mission};
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
+    if(Number.isFinite(previous.elapsedMs))clock.advance(0); // older saves remain compatible
+    if(Number.isFinite(previous.elapsedMs))clock.setElapsed(previous.elapsedMs);
   }
   discover(world,seen,player.row,player.col,3);
   let manifest=null;
@@ -109,6 +116,17 @@ async function init(){
     if(event.code==='KeyM'){event.preventDefault();void panels.open('map');return;}
     const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
   });
+  // Active-play clock: game time stops while the menu or a learning dialog is open.
+  setInterval(()=>{
+    const now=performance.now();
+    const delta=lastFrameTime===null?0:Math.min(1000,now-lastFrameTime);
+    lastFrameTime=now;
+    if(!$('game-screen').hidden && !panels?.isOpen()){
+      clock.advance(delta);
+      render();
+    }
+  },250);
+  setInterval(()=>{if(!$('game-screen').hidden)void persist();},10000);
   render();
   message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
   window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size};
