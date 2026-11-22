@@ -104,7 +104,7 @@ test('Outdoor police and three dogs appear together on the correct floor',()=>{
 
 test('Prison day/night timetable changes lighting and staff shift schedules',()=>{
   const morning=makePrisonClock();
-  assert.equal(formatPrisonClock(morning).time,'06:30');
+  assert.equal(formatPrisonClock(morning).time,'06:00');
   const daytime=makePrisonClock({minutes:10*60});
   const nighttime=makePrisonClock({minutes:23*60});
   assert.equal(getRoutine(daytime).phase,'day');
