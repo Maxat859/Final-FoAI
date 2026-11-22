@@ -1,4 +1,5 @@
 import {isPassable,inBounds} from '../config.js';
+import {nearestExpansionInteraction} from './complexExpansion.js';
 
 export const START_POSITION=Object.freeze({row:10,col:4,facing:'right',steps:0});
 export const VISION_RADIUS=6;
@@ -67,5 +68,6 @@ export function nearestInteraction(player,world,entities=[],floor=1){
     {row:16,col:18,kind:'dossier',name:'Архив досье'}
   ];
   targets.push(...entities.map(e=>({...e,kind:'npc'})));
-  return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||null;
+  return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||
+    nearestExpansionInteraction(player,floor)||null;
 }
