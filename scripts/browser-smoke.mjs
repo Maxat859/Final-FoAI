@@ -123,6 +123,44 @@ try{
   assert.equal(await page.locator('#tools-popup').isVisible(),true);
   await page.locator('#tools-close').click();
 
+  // The expansion is not a static image: it contains physical, interactive
+  // rooms, outdoor police and dogs, independent patrols, and day/night shifts.
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(68,100,1)),'E');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(50,80,1)),'Z');
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(55,86,1)),true);
+  const outdoor=await page.evaluate(()=>({
+    size:document.querySelector('#map-size-label').textContent,
+    staff:window.QAMAL_DEBUG.getStaff(),
+    zone:document.querySelector('#zone-name').textContent,
+    unitCount:window.QAMAL_DEBUG.getWorldState().guards.length,
+    dogs:window.QAMAL_DEBUG.getWorldState().dogs.length
+  }));
+  assert.match(outdoor.size,/104\s*×\s*72/);
+  assert.match(outdoor.zone,/ДВОР/);
+  assert.equal(outdoor.unitCount,33);
+  assert.equal(outdoor.dogs,3);
+  assert.equal(outdoor.staff.police,5);
+  await page.screenshot({path:'/tmp/qamal-large-prison-yard-dogs.png',fullPage:true});
+
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.warpTo(49,80,1)),true);
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(600));
+  assert.equal(await page.locator('#prison-clock').innerText(),'10:00');
+  assert.equal(await page.locator('#game-screen').getAttribute('data-time-of-day'),'day');
+  const startGuard=await page.evaluate(()=>{
+    const g=window.QAMAL_DEBUG.getWorldState().guards.find(u=>u.id==='watch-a1');
+    return [g.x,g.y];
+  });
+  await page.waitForFunction(([x,y])=>{
+    const g=window.QAMAL_DEBUG.getWorldState().guards.find(u=>u.id==='watch-a1');
+    return g.x!==x||g.y!==y;
+  },startGuard,{timeout:6000});
+  await page.screenshot({path:'/tmp/qamal-day-patrol.png',fullPage:true});
+
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(23*60));
+  assert.equal(await page.locator('#prison-clock').innerText(),'23:00');
+  assert.equal(await page.locator('#game-screen').getAttribute('data-time-of-day'),'night');
+  await page.screenshot({path:'/tmp/qamal-night-patrol.png',fullPage:true});
+
   // Sound can be toggled at any time and its volume saved from Settings.
   await page.locator('#sound-toggle').click();
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
@@ -140,5 +178,5 @@ try{
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
   assert.deepEqual(errors,[],'No uncaught browser errors');
   await page.screenshot({path:'/tmp/qamal-game-browser-smoke.png',fullPage:true});
-  console.log('QAMAL browser walk: wake-up, escorted class, door, mentor, library, stairs, SFX toggle, volume and 4-direction sprites — PASS');
+  console.log('QAMAL browser walk: 104x72 prison, police dogs, autonomous patrol, night mode, story, study and audio — PASS');
 }finally{await browser.close();}
