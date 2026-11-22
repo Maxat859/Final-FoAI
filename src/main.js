@@ -147,7 +147,7 @@ function startPrisonSimulation(){
   if(patrolTimer!==null)return;
   patrolTimer=window.setInterval(()=>{
     if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
-       escorting||storyStage!=='free'||mission.finished)return;
+       escorting||!['free','classroom'].includes(storyStage)||mission.finished)return;
     const was=getRoutine(live.clock).name;
     const result=advanceLiveWorld(live,player,world,floor);
     live=result.state;alarm=live.alarm.value;
