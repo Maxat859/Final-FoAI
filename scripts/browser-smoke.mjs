@@ -11,6 +11,7 @@ try{
   const start=await page.evaluate(()=>({pos:window.QAMAL_DEBUG.getPosition(),bed:window.QAMAL_DEBUG.getTile(10,3),bars:window.QAMAL_DEBUG.getTile(9,4)}));
   assert.equal(start.pos.row,10);assert.equal(start.pos.col,4);assert.equal(start.bed,'b');assert.equal(start.bars,'G');
   await page.locator('.wake-scene').waitFor({state:'visible'});
+  assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getDayLengthMs()),40*60*1000);
   const audioAvailable=await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState().available);
   assert.equal(audioAvailable,true,'Chromium should support Web Audio');
   await page.waitForFunction(()=>window.QAMAL_DEBUG.getAudioState().ready,{timeout:4000});
@@ -162,7 +163,7 @@ try{
   await page.screenshot({path:'/tmp/qamal-night-patrol.png',fullPage:true});
 
   // 17:00 roll-call starts with a duty guard and returning residents.
-  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(16*60+55));
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(16*60+59));
   await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='17:00',
     null,{timeout:6500});
   await page.locator('#game-dialog').waitFor({state:'visible'});
@@ -181,7 +182,7 @@ try{
 
   // At 20:00 every resident goes to their cell, hero is returned to his own
   // bed, and the night gate becomes a real solid iron barrier.
-  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(19*60+55));
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(19*60+59));
   await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='20:00',
     null,{timeout:6500});
   await page.locator('#game-dialog').waitFor({state:'visible'});
@@ -201,7 +202,7 @@ try{
   await page.locator('#game-dialog [data-close]').first().click();
 
   // The bedtime button skips to morning and re-opens all residential gates.
-  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(21*60+55));
+  await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(21*60+59));
   await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='22:00',
     null,{timeout:6500});
   await page.locator('#game-dialog').waitFor({state:'visible'});
