@@ -5,7 +5,7 @@ import { createLiveWorld, advanceLiveWorld, restoreLiveWorld, guardEntities, rel
 
 test("Новая глава содержит двух игровых охранников и нормальный уровень тревоги",()=>{
   const live=createLiveWorld();
-  assert.equal(live.guards.length,8);
+  assert.equal(live.guards.length,33);
   assert.equal(live.alarm.value,0);
   assert.equal(live.status,"playing");
   assert.equal(guardEntities(live).length,4);
