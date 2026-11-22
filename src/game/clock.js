@@ -4,6 +4,7 @@ export const HOUR_MS=DAY_MS/24;
 export function createClock(savedMs=0){
   let elapsed=((Number(savedMs)||0)%DAY_MS+DAY_MS)%DAY_MS;
   return {
+    setElapsed(ms){elapsed=((Number(ms)||0)%DAY_MS+DAY_MS)%DAY_MS;},
     advance(realMs){elapsed=(elapsed+Math.max(0,Math.min(1000,realMs)))%DAY_MS;},
     get elapsedMs(){return elapsed;},
     get hour(){return Math.floor(elapsed/HOUR_MS);},
