@@ -172,10 +172,22 @@ function showRollCallInspector(show=true){
     const list=entitiesByFloor[f],id='rollcall-inspector-'+f;
     const pos=list.findIndex(e=>e.id===id);
     if(!show&&pos>=0){list.splice(pos,1);continue;}
-    if(show&&pos<0){
-      const p=f===1?{row:9,col:6}:{row:4,col:6};
-      list.push({id,floor:f,...p,role:'escort',spriteId:ASSET_IDS.guard,
-        name:'Дежурный на перекличке',mode:'post',facing:'down'});
+    if(show){
+      const inspecting=nightPhase(live.clock)==='rollcall';
+      const stops=f===1?
+        [{row:8,col:6},{row:7,col:6},{row:7,col:5},{row:7,col:6}]:
+        [{row:4,col:6},{row:4,col:7},{row:4,col:8},{row:4,col:7}];
+      const point=stops[inspecting?live.tick%stops.length:0];
+      if(pos>=0){
+        const officer=list[pos];
+        officer.facing=facingFromStep(officer,point,officer.facing);
+        officer.moving=inspecting&&(officer.row!==point.row||officer.col!==point.col);
+        officer.walkFrame=(officer.walkFrame||0)+(officer.moving?1:0);
+        officer.row=point.row;officer.col=point.col;
+      }else{
+        list.push({id,floor:f,...point,role:'escort',spriteId:ASSET_IDS.guard,
+          name:'Дежурный на перекличке',mode:'patrol',facing:'down'});
+      }
     }
   }
 }
@@ -189,6 +201,7 @@ function returnHeroToCell(){
 function handleNightChange(oldClock){
   residents=updateResidents(residents,live.clock,worlds);
   syncResidents();
+  if(['rollcall','return'].includes(nightPhase(live.clock)))showRollCallInspector(true);
   const event=nightlyAnnouncement(oldClock,live.clock);
   if(!event)return;
   if(event.type==='rollcall'){
@@ -216,7 +229,14 @@ function handleNightChange(oldClock){
   render();void persist();
 }
 async function sleepToMorning(){
-  if(!cellsLocked(live.clock)||!nearBunk(world,player))return;
+  if(!cellsLocked(live.clock))return;
+  if(!nearBunk(world,player)){
+    if(floor!==1||Math.abs(player.row-CELL_BED.row)>2||
+       Math.abs(player.col-CELL_BED.col)>4){
+      message('Подойди к своей кровати и нажми E, чтобы отдохнуть.');return;
+    }
+    player={...player,row:CELL_BED.row,col:CELL_BED.col};
+  }
   const previous=live.clock;
   live={...live,clock:nextMorningClock(previous)};
   residents=updateResidents(residents,live.clock,worlds,{steps:1});
