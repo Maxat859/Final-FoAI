@@ -157,3 +157,8 @@ kbd { display: inline-flex; justify-content:center; align-items:center; min-widt
 .result-hero {padding:25px;text-align:center;background:#244638;color:#b4ebc8;border:2px solid #64ad82;font-size:22px;font-weight:900;}
 button[disabled] {opacity:.42;cursor:not-allowed;}
 @media(max-width:680px){.dossier-layout,.lab-grid{grid-template-columns:1fr;}.panel-actions{grid-template-columns:1fr 1fr;}.dialog-backdrop{padding:8px;}.dialog-card{max-height:96dvh;padding:14px;}}
+
+/* In-game weekday and time always visible above the prison map. */
+.map-toolbar {flex-wrap:wrap;align-items:center;}
+#game-weekday {color:#e1b25c;font-weight:700;white-space:nowrap;}
+#game-clock {font-size:15px;font-weight:900;color:#e8eced;font-variant-numeric:tabular-nums;white-space:nowrap;}
