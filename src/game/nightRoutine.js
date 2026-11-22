@@ -125,30 +125,102 @@ export function createResidentRoster(worlds,original=[]){
     }
     occupied.add(key(p.home));
   }
+
+  // Separate everyday locations: meals, studies and activities.
+  // Select real walkable floor tiles in each destination room.
+  const allocations={breakfast:new Set(),study:new Set(),activity:new Set()};
+  for(const p of residents){
+    const index=residents.filter(other=>other.floor===p.floor).indexOf(p);
+    const breakfast=activityPlace(worlds[p.floor],p.floor,['canteen','kitchen'],index,allocations.breakfast,p.day);
+    const study=activityPlace(worlds[p.floor],p.floor,['study','library'],index,allocations.study,p.day);
+    const activity=activityPlace(worlds[p.floor],p.floor,['workshop','recreation','yard'],index,allocations.activity,p.day);
+    p.stations={wake:p.day,breakfast,study,lunch:breakfast,activity,
+      rollcall:p.home,dinner:breakfast,return:p.home,sleep:p.home};
+  }
   return residents;
 }
-export function updateResidents(current,clock,worlds,{steps=3}={}){
-  const phase=nightPhase(clock);
-  return current.map(p=>{
-    const target=phase==='day'||phase==='wake'?p.day:p.home;
-    const sleeping=phase==='sleep';
-    if(sleeping||phase==='return'){
-      return {...p,row:p.home.row,col:p.home.col,sleeping,
-        moving:false,animation:sleeping?'sleep':'idle'};
+
+function activityPlace(world,floor,types,index,used,fallback){
+  const rooms=EXPANSION_ROOMS.filter(room=>room.floor===floor&&types.includes(room.type));
+  if(types.includes('canteen')&&floor===2)
+    rooms.push({row:9,col:27,width:12,height:8,type:'canteen'});
+  if(!rooms.length)return {...fallback};
+  const start=index%rooms.length;
+  for(let i=0;i<rooms.length;i++){
+    const room=rooms[(start+i)%rooms.length],spots=[];
+    for(let r=room.row+2;r<room.row+room.height-1;r++)
+      for(let c=room.col+2;c<room.col+room.width-1;c++)
+        if(isPassable(world,r,c)&&!used.has(floor+':'+r+':'+c))spots.push({row:r,col:c});
+    if(spots.length){
+      const place=spots[Math.floor(index/rooms.length)%spots.length];
+      used.add(floor+':'+place.row+':'+place.col);
+      return place;
     }
-    if(p.row===target.row&&p.col===target.col)
-      return {...p,sleeping:false,moving:false,animation:'idle'};
-    const world=worlds[p.floor];
-    const key=target.row+','+target.col;
-    const path=p.routeTarget===key&&Array.isArray(p.pathSteps)&&p.pathSteps.length
-      ?p.pathSteps:planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
-    // Visible movement during roll-call; one cached route per destination.
-    const count=Math.min(Math.max(1,steps),path.length);
-    const point=path[count-1];
-    if(!point)return {...p,sleeping:false,moving:false,routeTarget:key,pathSteps:[]};
+  }
+  return {...fallback};
+}
+
+export function residentRoutine(clock){
+  const m=makePrisonClock(clock).minutes;
+  if(m<6*60)return 'sleep';
+  if(m<7*60)return 'wake';
+  if(m<9*60)return 'breakfast';
+  if(m<12*60)return 'study';
+  if(m<13*60)return 'lunch';
+  if(m<17*60)return 'activity';
+  if(m<18*60)return 'rollcall';
+  if(m<20*60)return 'dinner';
+  if(m<22*60)return 'return';
+  return 'sleep';
+}
+const residentPosition=p=>p.floor+':'+p.row+','+p.col;
+export function restoreResidents(fresh,saved,worlds){
+  if(!Array.isArray(saved))return fresh;
+  const previous=new Map(saved.filter(p=>p&&typeof p.id==='string').map(p=>[p.id,p]));
+  const used=new Set();
+  return fresh.map(p=>{
+    const old=previous.get(p.id);
+    if(!old||old.floor!==p.floor||!Number.isInteger(old.row)||!Number.isInteger(old.col)||
+       !isPassable(worlds[p.floor],old.row,old.col)){
+      used.add(residentPosition(p));return p;
+    }
+    const place=p.floor+':'+old.row+','+old.col;
+    if(used.has(place)){used.add(residentPosition(p));return p;}
+    used.add(place);
+    return {...p,row:old.row,col:old.col,
+      facing:['up','down','left','right'].includes(old.facing)?old.facing:p.facing,
+      walkFrame:Number.isInteger(old.walkFrame)?old.walkFrame:0,
+      moving:false,sleeping:Boolean(old.sleeping),routeTarget:null,pathSteps:[]};
+  });
+}
+/** Move one tile per simulation update; never teleport on a shift transition. */
+export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[]}={}){
+  const routine=residentRoutine(clock);
+  const occupied=new Set(current.map(residentPosition));
+  for(const place of blockedPositions)
+    if(place&&Number.isInteger(place.floor)&&Number.isInteger(place.row)&&Number.isInteger(place.col))
+      occupied.add(place.floor+':'+place.row+','+place.col);
+  return current.map(p=>{
+    const target=p.stations?.[routine]||((routine==='sleep'||routine==='return')?p.home:p.day);
+    const home=p.row===p.home.row&&p.col===p.home.col;
+    const atTarget=p.row===target.row&&p.col===target.col;
+    const sleeping=routine==='sleep'&&home;
+    if(atTarget)return {...p,sleeping,moving:false,animation:sleeping?'sleep':'idle',pathSteps:[]};
+    const world=worlds[p.floor],key=target.row+','+target.col;
+    const cached=p.routeTarget===key&&Array.isArray(p.pathSteps)&&p.pathSteps.length
+      ?p.pathSteps:[];
+    let path=cached.length?cached:planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
+    // Route cache can contain stale moves after a save or an interrupted walk.
+    if(path.length&&Math.abs(path[0].x-p.col)+Math.abs(path[0].y-p.row)!==1)
+      path=planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
+    const point=path[0],nextKey=point&&p.floor+':'+point.y+','+point.x;
+    if(!point||!isPassable(world,point.y,point.x)||occupied.has(nextKey))
+      return {...p,sleeping:false,moving:false,animation:'idle',routeTarget:key,pathSteps:path};
+    occupied.delete(residentPosition(p));
+    occupied.add(nextKey);
     const next={row:point.y,col:point.x};
     return {...p,...next,sleeping:false,moving:true,animation:'walk',
-      routeTarget:key,pathSteps:path.slice(count),
+      routeTarget:key,pathSteps:path.slice(1),
       walkFrame:(p.walkFrame||0)+1,facing:facingFromStep(p,next,p.facing)};
   });
 }
