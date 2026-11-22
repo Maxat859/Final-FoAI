@@ -177,7 +177,7 @@ function showRollCallInspector(show=true){
       const stops=f===1?
         [{row:8,col:6},{row:7,col:6},{row:7,col:5},{row:7,col:6}]:
         [{row:4,col:6},{row:4,col:7},{row:4,col:8},{row:4,col:7}];
-      const point=stops[inspecting?live.tick%stops.length:0];
+      const point=inspecting?stops[live.tick%stops.length]:(f===1?stops[0]:stops[1]);
       if(pos>=0){
         const officer=list[pos];
         officer.facing=facingFromStep(officer,point,officer.facing);
