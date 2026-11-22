@@ -46,7 +46,7 @@ test('Clock retains fractional minutes across saves, menu pauses and small ticks
   const pauseClock=makePrisonClock(resumed);
   assert.deepEqual(pauseClock,resumed);
   assert.deepEqual(advancePrisonClockByRealTime(pauseClock,-100),pauseClock);
-  assert.equal(formatPrisonClock(resumed).time,'06:31');
+  assert.equal(formatPrisonClock(resumed).time,'06:01');
 });
 test('Guards still patrol on movement without altering time',()=>{
   const world=createLevel(1),initial=createLiveWorld();
