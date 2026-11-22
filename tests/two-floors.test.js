@@ -74,7 +74,7 @@ test('Both floors have convincing props and challenge doors',()=>{
 test('Guards patrol and detect only the current floor',()=>{
   const first=createLevel(1),second=createLevel(2);
   const state=createLiveWorld();
-  assert.equal(state.guards.length,8);
+  assert.equal(state.guards.length,33);
   assert.equal(guardEntities(state,1).length,4);
   assert.equal(guardEntities(state,2).length,4);
   const upper=advanceLiveWorld(state,{row:12,col:30},second,2);
