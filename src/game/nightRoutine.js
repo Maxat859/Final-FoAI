@@ -195,23 +195,48 @@ const residentPosition=p=>p.floor+':'+p.row+','+p.col;
 export function restoreResidents(fresh,saved,worlds){
   if(!Array.isArray(saved))return fresh;
   const previous=new Map(saved.filter(p=>p&&typeof p.id==='string').map(p=>[p.id,p]));
-  const used=new Set();
+  const positions=new Set(),homes=new Set();
+  const valid=(floor,position)=>Number.isInteger(position?.row)&&
+    Number.isInteger(position?.col)&&isPassable(worlds[floor],position.row,position.col);
+  const toKey=(floor,position)=>floor+':'+position.row+','+position.col;
   return fresh.map(p=>{
     const old=previous.get(p.id);
-    if(!old||old.floor!==p.floor||!Number.isInteger(old.row)||!Number.isInteger(old.col)||
-       !isPassable(worlds[p.floor],old.row,old.col)){
-      used.add(residentPosition(p));return p;
+    let home={...p.home};
+    const oldHomeRoom=EXPANSION_ROOMS.find(room=>room.floor===p.floor&&room.type==='cell'&&
+      old?.home?.row>room.row&&old.home.row<room.row+room.height-1&&
+      old?.home?.col>room.col&&old.home.col<room.col+room.width-1);
+    if(old?.floor===p.floor&&valid(p.floor,old?.home)&&oldHomeRoom&&
+       !homes.has(toKey(p.floor,old.home)))home={row:old.home.row,col:old.home.col};
+    if(homes.has(toKey(p.floor,home)))home={...p.home};
+    if(homes.has(toKey(p.floor,home))){
+      const room=EXPANSION_ROOMS.find(r=>r.floor===p.floor&&r.type==='cell'&&
+        p.home.row>r.row&&p.home.row<r.row+r.height);
+      if(room){
+        for(let row=room.row+3;row<room.row+room.height-1;row++){
+          for(let col=room.col+2;col<room.col+room.width-1;col++){
+            const candidate={row,col};
+            if(valid(p.floor,candidate)&&!homes.has(toKey(p.floor,candidate))){
+              home=candidate;break;
+            }
+          }
+          if(!homes.has(toKey(p.floor,home)))break;
+        }
+      }
     }
-    const place=p.floor+':'+old.row+','+old.col;
-    if(used.has(place)){used.add(residentPosition(p));return p;}
-    used.add(place);
-    return {...p,row:old.row,col:old.col,
-      facing:['up','down','left','right'].includes(old.facing)?old.facing:p.facing,
-      walkFrame:Number.isInteger(old.walkFrame)?old.walkFrame:0,
-      moving:false,sleeping:Boolean(old.sleeping),routeTarget:null,pathSteps:[]};
+    homes.add(toKey(p.floor,home));
+    let row=p.row,col=p.col;
+    if(old?.floor===p.floor&&valid(p.floor,old)&&!positions.has(toKey(p.floor,old))){
+      row=old.row;col=old.col;
+    }
+    positions.add(toKey(p.floor,{row,col}));
+    return {...p,row,col,home,
+      stations:{...p.stations,rollcall:home,return:home,sleep:home},
+      facing:['up','down','left','right'].includes(old?.facing)?old.facing:p.facing,
+      walkFrame:Number.isInteger(old?.walkFrame)?old.walkFrame:0,
+      moving:false,sleeping:Boolean(old?.sleeping),
+      stuckTicks:0,routeTarget:null,pathSteps:[]};
   });
 }
-/** Move one tile per simulation update; never teleport on a shift transition. */
 /** One-tile, simultaneous NPC updates: occupants can trade places in tight halls. */
 
 function alternativeHome(p,people,worlds,external,reservedHomes){
