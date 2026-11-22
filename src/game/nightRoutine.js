@@ -119,14 +119,20 @@ export function createResidentRoster(worlds,original=[]){
       p.row=p.day.row;p.col=p.day.col;
     }
     dayOccupied.add(key(p.day));
-    if(!isPassable(w,p.home.row,p.home.col)||occupied.has(key(p.home))){
+    const homeRoom=EXPANSION_ROOMS.find(r=>r.floor===p.floor&&r.type==='cell'&&
+      p.home.row>r.row&&p.home.row<r.row+r.height&&
+      p.home.col>r.col&&p.home.col<r.col+r.width);
+    const aisleColumn=homeRoom?.col+Math.floor(homeRoom.width/2);
+    if(!isPassable(w,p.home.row,p.home.col)||occupied.has(key(p.home))||
+       p.home.col===aisleColumn){
       const center=p.home;
       let options=[];
       for(let r=center.row-4;r<=center.row+4;r++)
         for(let c=center.col-4;c<=center.col+4;c++){
           const cellRoom=EXPANSION_ROOMS.find(x=>x.floor===p.floor&&x.type==='cell'&&
             r>x.row+2&&r<x.row+x.height-1&&c>x.col&&c<x.col+x.width-1);
-          if(!cellRoom||!isPassable(w,r,c)||occupied.has(key({row:r,col:c})))continue;
+          if(!cellRoom||c===cellRoom.col+Math.floor(cellRoom.width/2)||
+             !isPassable(w,r,c)||occupied.has(key({row:r,col:c})))continue;
           options.push({row:r,col:c,distance:Math.abs(r-center.row)+Math.abs(c-center.col)});
         }
       options.sort((a,b)=>a.distance-b.distance||a.row-b.row||a.col-b.col);
@@ -161,7 +167,8 @@ function activityPlace(world,floor,types,index,used,fallback){
     const room=rooms[(start+i)%rooms.length],spots=[];
     for(let r=room.row+2;r<room.row+room.height-1;r++)
       for(let c=room.col+2;c<room.col+room.width-1;c++)
-        if(isPassable(world,r,c)&&!used.has(floor+':'+r+':'+c))spots.push({row:r,col:c});
+        if(isPassable(world,r,c)&&c!==room.col+Math.floor(room.width/2)&&
+           !used.has(floor+':'+r+':'+c))spots.push({row:r,col:c});
     if(spots.length){
       const place=spots[Math.floor(index/rooms.length)%spots.length];
       used.add(floor+':'+place.row+':'+place.col);
