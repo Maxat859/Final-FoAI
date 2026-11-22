@@ -5,9 +5,9 @@ import {START_POSITION,VISION_RADIUS,computeFieldOfView,discover} from '../src/g
 import {getCameraOffset} from '../src/game/camera.js';
 import {findPath} from '../src/algorithms/search.js';
 
-test('new QAMAL level is 48x32 and preserves the original checkpoints',()=>{
+test('new QAMAL mega prison is 104x72 and preserves the original checkpoints',()=>{
   const world=createLevel();
-  assert.equal(COLS,48);assert.equal(ROWS,32);
+  assert.equal(COLS,104);assert.equal(ROWS,72);
   assert.equal(world.length,ROWS);
   assert.ok(world.every(row=>row.length===COLS));
   assert.equal(world[EXIT_POSITION.row][EXIT_POSITION.col],'E');
