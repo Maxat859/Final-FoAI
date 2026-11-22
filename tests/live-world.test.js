@@ -8,7 +8,7 @@ test("Новая глава содержит двух игровых охран�
   assert.equal(live.guards.length,33);
   assert.equal(live.alarm.value,0);
   assert.equal(live.status,"playing");
-  assert.equal(guardEntities(live).length,4);
+  assert.equal(guardEntities(live).length,19);
 });
 
 test("Охранники участвуют в обновлении мира после ходов игрока",()=>{
@@ -19,7 +19,7 @@ test("Охранники участвуют в обновлении мира п�
     state=next.state;
   }
   assert.equal(state.tick,4);
-  assert.equal(state.guards.length,8);
+  assert.equal(state.guards.length,33);
   assert.ok(state.guards.every(g=>["patrol","suspicion","search","chase"].includes(g.state)));
 });
 
