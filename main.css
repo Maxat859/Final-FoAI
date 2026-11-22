@@ -455,3 +455,8 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
  .prison-routine-scene p{font-size:11px}
  .routine-buttons{flex-direction:column}
 }
+
+/* Persistent in-world calendar: day number, weekday and time. */
+.hud-time .hud-weekday{display:block;color:#efd19c;font:800 9px/1.25 Consolas,monospace;white-space:nowrap;margin-bottom:3px;letter-spacing:.02em}
+@media(max-width:940px){.hud-time .hud-weekday{font-size:7px}}
+@media(max-width:680px){.hud-time .hud-weekday{font-size:7px;white-space:normal;max-width:90px;margin-bottom:2px}}
