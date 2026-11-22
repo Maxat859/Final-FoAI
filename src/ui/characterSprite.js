@@ -4,6 +4,47 @@
  * alternate legs and arms, and the same style works for the guard.
  */
 export const FACING_DIRECTIONS=Object.freeze(['up','down','left','right']);
+
+/**
+ * Shared visual language: every human in QAMAL uses the same 32px proportions
+ * and four-direction animation. Colour, hair and badge distinguish characters.
+ */
+const HUMAN_VARIANTS=Object.freeze([
+  {cloth:'#607f75',light:'#92b3a5',dark:'#405b56',hair:'#272e35'},
+  {cloth:'#657d8b',light:'#9aafb4',dark:'#405564',hair:'#44352e'},
+  {cloth:'#827a65',light:'#b4a58b',dark:'#595343',hair:'#2a262d'},
+  {cloth:'#776b81',light:'#a597ad',dark:'#51475a',hair:'#47372d'},
+  {cloth:'#85745d',light:'#b6a083',dark:'#584d3d',hair:'#34313e'},
+  {cloth:'#548075',light:'#8fb8a9',dark:'#365b53',hair:'#5c4535'}
+]);
+const UNIQUE_CHARACTERS=Object.freeze({
+  erasyl:{cloth:'#a67f50',light:'#d8aa70',dark:'#705737',hair:'#29252b'},
+  arman:{cloth:'#527766',light:'#87aa87',dark:'#34544b',hair:'#383036'},
+  ruslan:{cloth:'#727b91',light:'#a1acc0',dark:'#4e586e',hair:'#24252a'},
+  daniyar:{cloth:'#7d755f',light:'#b0a78f',dark:'#585346',hair:'#513c2e'},
+  madina:{cloth:'#7f6e88',light:'#b19cc1',dark:'#56495e',hair:'#302832'},
+  timur:{cloth:'#638187',light:'#9cb7b6',dark:'#40575e',hair:'#302d32'},
+  svetlana:{cloth:'#887365',light:'#b8a28f',dark:'#5c4b43',hair:'#352b2b'},
+  bakyt:{cloth:'#617d73',light:'#94b2a2',dark:'#42594e',hair:'#49372f'}
+});
+function nameHash(name){
+  let n=2166136261;
+  for(const ch of String(name||'')){n=Math.imul(n^ch.charCodeAt(0),16777619);}
+  return n>>>0;
+}
+export function characterPalette(kind='player',characterId=''){
+  const id=String(characterId||'').toLowerCase();
+  const hash=nameHash(id);
+  const variant=UNIQUE_CHARACTERS[id]||HUMAN_VARIANTS[hash%HUMAN_VARIANTS.length];
+  if(kind==='police')return {cloth:'#213f5f',light:'#5485a5',dark:'#152b47',
+    hair:'#1a2939',skin:'#cda17e',accent:'#d9c18c',badge:true,hairStyle:0};
+  if(kind==='guard')return {cloth:'#386891',light:'#6d9fbc',dark:'#284667',
+    hair:'#1c2d40',skin:'#cda17e',accent:'#d8ceae',badge:true,hairStyle:hash%3};
+  return {...variant,skin:['#cfa07d','#bd8a6d','#dfaf8d'][hash%3],
+    accent:kind==='player'?'#eacb91':'#d8cfa9',
+    badge:false,hairStyle:hash%3};
+}
+
 export function normalizeFacing(value){return FACING_DIRECTIONS.includes(value)?value:'down';}
 export function facingFromStep(from,to,fallback='down'){
   const dx=(to?.col??to?.x??0)-(from?.col??from?.x??0);
@@ -13,15 +54,13 @@ export function facingFromStep(from,to,fallback='down'){
   return normalizeFacing(fallback);
 }
 export function drawDirectionalCharacter(ctx,x,y,{
-  facing='down',walkFrame=0,moving=false,kind='player'
+  facing='down',walkFrame=0,moving=false,kind='player',characterId=''
 }={}){
   const direction=normalizeFacing(facing);
-  const guard=kind==='guard'||kind==='police',prisoner=kind==='prisoner',police=kind==='police';
-  const cloth=police?'#213f5f':guard?'#386891':prisoner?'#5e7c70':'#b88453';
-  const clothLight=police?'#5485a5':guard?'#6d9fbc':prisoner?'#83a495':'#d1a674';
-  const clothDark=police?'#152b47':guard?'#284667':prisoner?'#3d6357':'#795636';
-  const skin=guard?'#d6ae87':'#cb9672';
-  const hair=guard?'#1c2d40':'#29252b';
+  const guard=kind==='guard'||kind==='police',police=kind==='police';
+  const look=characterPalette(kind,characterId);
+  const cloth=look.cloth,clothLight=look.light,clothDark=look.dark;
+  const skin=look.skin,hair=look.hair;
   const boot='#182935',eye='#23232a';
   const alt=moving?(walkFrame%2?1:-1):0;
   const R=(xx,yy,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(xx,yy,w,h);};
@@ -61,6 +100,18 @@ export function drawDirectionalCharacter(ctx,x,y,{
     R(7,10,4,5,skin);R(11,11,4,2,eye);R(8,14,4,2,'#a6745e');
     R(12,16,7,1,'#855a51');
     if(guard){R(10,4,15,4,clothDark);R(9,7,18,3,cloth);}
+  }
+  // All humans share the same shoulder seams, uniform crease and pixel grid.
+  R(10,18,2,4,clothDark);R(22,18,2,4,clothLight);
+  R(12,22,8,1,clothLight);
+  // Slightly different hairlines and accessories make named NPCs recognizable.
+  if(!guard){
+    if(look.hairStyle===0)R(13,5,7,2,hair);
+    else if(look.hairStyle===1)R(9,5,5,4,hair);
+    else R(20,6,4,5,hair);
+    R(21,23,3,2,look.accent); // small cell-block patch
+  }else{
+    R(12,18,4,3,look.accent); // security identification badge
   }
   if(police){
     // Police star emblem, visible on all four directional uniforms.
