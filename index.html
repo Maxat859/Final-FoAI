@@ -34,6 +34,20 @@
       <p>На каждой двери также можно переключить Python и Go.</p>
       <label for="language-select">ЯЗЫК ПО УМОЛЧАНИЮ</label>
       <select id="language-select"><option value="python">Python</option><option value="go">Go</option></select>
+      <fieldset class="audio-settings">
+        <legend>ЗВУК И АТМОСФЕРА</legend>
+        <label class="audio-check">
+          <input type="checkbox" id="audio-enabled" checked>
+          <span>Включить звуки и фоновую атмосферу тюрьмы</span>
+        </label>
+        <label class="audio-range" for="audio-volume">ГРОМКОСТЬ <output id="audio-volume-value" for="audio-volume">42%</output></label>
+        <input id="audio-volume" type="range" min="0" max="100" step="1" value="42" aria-label="Общая громкость игры">
+        <label class="audio-check">
+          <input type="checkbox" id="audio-voice">
+          <span>Озвучка реплик (синтез речи браузера, необязательно)</span>
+        </label>
+        <p id="audio-info" class="audio-help">Звук включается после первого нажатия «Начать игру».</p>
+      </fieldset>
       <button id="back-btn" class="secondary-btn">← В МЕНЮ</button>
     </div>
   </section>
@@ -49,6 +63,7 @@
           <div class="stat-bar"><span id="alert-fill" class="stat-fill alert"></span></div>
         </div>
         <div class="hud-guard"><span class="led-dot"></span><span id="guard-state">ПАТРУЛЬ</span></div>
+        <button id="sound-toggle" class="hud-icon-btn" aria-label="Выключить звуки" aria-pressed="true" title="Выключить звуки">🔊</button>
         <button id="fullscreen-btn" class="hud-icon-btn" title="На полный экран">⛶</button>
         <button id="tools-toggle" class="hud-icon-btn" title="Открыть задания и меню">☰</button>
       </div>
