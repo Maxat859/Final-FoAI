@@ -172,6 +172,12 @@ try{
   assert.ok(inmates.some(p=>p.moving));
   await page.screenshot({path:'/tmp/qamal-night-rollcall.png',fullPage:true});
   await page.locator('#game-dialog [data-close]').first().click();
+  const inspectorStart=await page.evaluate(()=>window.QAMAL_DEBUG.getInspectors()[0]);
+  assert.ok(inspectorStart,'a duty officer must appear at the residential gate');
+  await page.waitForFunction(([r,c])=>{
+    const officer=window.QAMAL_DEBUG.getInspectors()[0];
+    return officer&&(officer.row!==r||officer.col!==c);
+  },[inspectorStart.row,inspectorStart.col],{timeout:6500});
 
   // At 20:00 every resident goes to their cell, hero is returned to his own
   // bed, and the night gate becomes a real solid iron barrier.
