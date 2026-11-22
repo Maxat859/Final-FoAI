@@ -16,7 +16,7 @@
       <div class="logo">QAMAL<span class="logo-dot">.</span></div>
       <h1>PRISON BREAK</h1>
       <div class="menu-divider"></div>
-      <p class="tagline">Два этажа, тюремные камеры, охрана и двери с AI-заданиями.</p>
+      <p class="tagline">Большой двухэтажный тюремный комплекс, прогулочный двор, смены охраны и AI-задания.</p>
       <div class="menu-actions">
         <button id="play-btn" class="primary-btn">▶ ПРОДОЛЖИТЬ / НАЧАТЬ ИГРУ</button>
         <button id="new-game-btn" class="secondary-btn">↻ НОВАЯ ИГРА С НАЧАЛА</button>
@@ -63,6 +63,7 @@
           <div class="stat-bar"><span id="alert-fill" class="stat-fill alert"></span></div>
         </div>
         <div class="hud-guard"><span class="led-dot"></span><span id="guard-state">ПАТРУЛЬ</span></div>
+        <div class="hud-time" aria-label="Игровое время и распорядок"><strong id="prison-clock">06:30</strong><small id="prison-routine">ПОДЪЁМ</small></div>
         <button id="sound-toggle" class="hud-icon-btn" aria-label="Выключить звуки" aria-pressed="true" title="Выключить звуки">🔊</button>
         <button id="fullscreen-btn" class="hud-icon-btn" title="На полный экран">⛶</button>
         <button id="tools-toggle" class="hud-icon-btn" title="Открыть задания и меню">☰</button>
@@ -106,7 +107,7 @@
         <button data-panel="lab">△ AI TRAINING</button>
         <button data-panel="help">? ПРАВИЛА</button>
       </div>
-      <div class="tool-bottom"><span id="map-size-label">48 × 32 КЛЕТКИ</span>
+      <div class="tool-bottom"><span id="map-size-label">104 × 72 КЛЕТКИ</span><span id="staff-count">ПАТРУЛЬ 0 / ПОСТ 0</span>
         <span id="pos-label">R:10 C:4</span></div>
       <div id="live-events" class="live-events">СИСТЕМА: ПАТРУЛИРОВАНИЕ</div>
       <div id="asset-status" class="asset-status">Загрузка Pixel Art...</div>
