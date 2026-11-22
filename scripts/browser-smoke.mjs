@@ -12,6 +12,8 @@ try{
   assert.equal(start.pos.row,10);assert.equal(start.pos.col,4);assert.equal(start.bed,'b');assert.equal(start.bars,'G');
   await page.locator('.wake-scene').waitFor({state:'visible'});
   assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getDayLengthMs()),40*60*1000);
+  assert.equal((await page.locator('#prison-weekday').innerText()).trim(),'ДЕНЬ 1 · ПОНЕДЕЛЬНИК');
+  assert.equal(await page.locator('#prison-clock').innerText(),'06:00');
   const audioAvailable=await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState().available);
   assert.equal(audioAvailable,true,'Chromium should support Web Audio');
   await page.waitForFunction(()=>window.QAMAL_DEBUG.getAudioState().ready,{timeout:4000});
@@ -180,8 +182,8 @@ try{
     return officer&&(officer.row!==r||officer.col!==c);
   },[inspectorStart.row,inspectorStart.col],{timeout:6500});
 
-  // At 20:00 every resident goes to their cell, hero is returned to his own
-  // bed, and the night gate becomes a real solid iron barrier.
+  // At 20:00 the residents start returning on walkable paths; the protagonist
+  // is returned to the cell, and the gates become solid barriers.
   await page.evaluate(()=>window.QAMAL_DEBUG.setPrisonTime(19*60+59));
   await page.waitForFunction(()=>document.querySelector('#prison-clock')?.textContent==='20:00',
     null,{timeout:6500});
@@ -197,7 +199,9 @@ try{
   assert.equal(bedtime.hero.col,4);
   assert.equal(bedtime.gate,'G');
   assert.equal(bedtime.phase,'return');
-  assert.ok(bedtime.people.every(p=>p.row===p.home.row&&p.col===p.home.col));
+  assert.ok(bedtime.people.length>=25);
+  assert.ok(bedtime.people.every(p=>p.home&&Number.isInteger(p.row)&&Number.isInteger(p.col)));
+  assert.ok(bedtime.people.some(p=>p.moving||p.row===p.home.row&&p.col===p.home.col));
   await page.screenshot({path:'/tmp/qamal-night-cell-closed.png',fullPage:true});
   await page.locator('#game-dialog [data-close]').first().click();
 
@@ -207,13 +211,16 @@ try{
     null,{timeout:6500});
   await page.locator('#game-dialog').waitFor({state:'visible'});
   assert.match(await page.locator('#dialog-inner').innerText(),/ОТБОЙ/);
-  assert.ok((await page.evaluate(()=>window.QAMAL_DEBUG.getResidents())).every(p=>p.sleeping));
+  const nightResidents=await page.evaluate(()=>window.QAMAL_DEBUG.getResidents());
+  assert.ok(nightResidents.every(p=>!p.sleeping||(p.row===p.home.row&&p.col===p.home.col)));
+  assert.ok(nightResidents.every(p=>p.stations?.sleep&&p.stations?.return));
   await page.screenshot({path:'/tmp/qamal-night-lightsout.png',fullPage:true});
   await page.locator('#routine-sleep').click();
   await page.locator('#morning-to-class').waitFor({state:'visible',timeout:6500});
   assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getTile(9,6,1)),'.');
   assert.equal(await page.evaluate(()=>window.QAMAL_DEBUG.getNightPhase()),'wake');
   assert.equal(await page.locator('#prison-clock').innerText(),'06:00');
+  assert.equal((await page.locator('#prison-weekday').innerText()).trim(),'ДЕНЬ 2 · ВТОРНИК');
   await page.screenshot({path:'/tmp/qamal-morning-wakeup.png',fullPage:true});
   await page.locator('#morning-to-class').click();
   await page.locator('#learn-answer').waitFor({state:'visible',timeout:20000});
