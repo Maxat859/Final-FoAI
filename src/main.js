@@ -11,7 +11,8 @@ import {createPanels} from './ui/panels.js';
 import {createDossierStore} from './surveillance/dossierStore.js';
 import {createDossierUI} from './ui/dossierUI.js';
 import {createTrainingLabUI} from './ui/trainingLabUI.js';
-import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities} from './game/liveWorld.js';
+import {createLiveWorld,restoreLiveWorld,advanceLiveWorld,releaseAfterCheckpoint,guardEntities,dogEntities,securitySummary} from './game/liveWorld.js';
+import {formatPrisonClock,makePrisonClock,getRoutine} from './game/prisonSchedule.js';
 import {changeAlarm} from './game/alarm.js';
 import {adjacentDoor,findDoor,doorId,DIFFICULTY_LABEL} from './game/doorChallenges.js';
 import {makeEscortPath,GUARD_APPROACH,CLASSROOM_DESK} from './game/escort.js';
@@ -35,6 +36,7 @@ let unlockedDoors=unlockedByFloor[1];
 let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 let storyStage='wake',escorting=false,learningProgress=validateProgress(null),mistakeJournal=[];
 let moveAnimationToken=0;
+let patrolTimer=null;
 function show(screen){
   for(const item of screens)item.hidden=item!==screen;
   if(screen===$('main-menu')||screen===$('settings-screen'))audio.stopAmbient();
@@ -68,7 +70,11 @@ function updateVision(){
   for(const tile of visible)seen.add(tile);
 }
 function render(){
-  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor});
+  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor,clock:live.clock});
+  const now=formatPrisonClock(live.clock);
+  const clockDisplay=$('prison-clock');if(clockDisplay)clockDisplay.textContent=now.time;
+  const scheduleDisplay=$('prison-routine');if(scheduleDisplay)scheduleDisplay.textContent=now.name;
+  $('game-screen').dataset.timeOfDay=now.phase;
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col,floor);
   const indicator=$('floor-indicator');if(indicator)indicator.textContent='ЭТАЖ '+floor+' / 2';
@@ -77,6 +83,8 @@ function render(){
   $('alert-fill').style.width=`${alarm}%`;
   const mode=alarm>=75?'КРИТИЧЕСКАЯ ТРЕВОГА':alarm>=60?'ПОИСК':alarm>=40?'ПОДОЗРЕНИЕ':'ПАТРУЛЬ';
   const guardLabel=$('guard-state');if(guardLabel)guardLabel.textContent=mode;
+  const guards=securitySummary(live,floor);
+  const staff=$('staff-count');if(staff)staff.textContent='ПАТРУЛЬ '+guards.moving+' / ПОСТ '+guards.posts+' · СОБАКИ '+guards.dogs;
   const logEl=$('live-events');if(logEl)logEl.textContent=live.events.slice(-2).map(e=>`${e.source}: ${e.description}`).join(' · ') || 'СИСТЕМА: ПАТРУЛИ В ДВИЖЕНИИ';
   $('objective').textContent=storyStage==='wake'?'Проснуться в камере':
     storyStage==='guard'?'Поговорить с охранником':
@@ -122,11 +130,34 @@ function unlockDoor(door){
 }
 function syncGuards(){
   for(const f of FLOORS){
-    for(const guard of guardEntities(live,f)){
-      const entity=entitiesByFloor[f].find(e=>e.id===guard.id);
-      if(entity)Object.assign(entity,guard);
+    const list=entitiesByFloor[f],mapped=new Map(list.map(e=>[e.id,e]));
+    for(const unit of [...guardEntities(live,f),...dogEntities(live,f)]){
+      const entity=mapped.get(unit.id);
+      if(entity)Object.assign(entity,unit);
+      else{
+        const created={...unit,floor:f,
+          spriteId:unit.role==='police'||unit.role==='guard'?ASSET_IDS.guard:ASSET_IDS.prisoner};
+        list.push(created);mapped.set(unit.id,created);
+      }
     }
   }
+}
+/** Security simulation runs independently of the player's keyboard. */
+function startPrisonSimulation(){
+  if(patrolTimer!==null)return;
+  patrolTimer=window.setInterval(()=>{
+    if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
+       escorting||storyStage!=='free'||mission.finished)return;
+    const was=getRoutine(live.clock).name;
+    const result=advanceLiveWorld(live,player,world,floor);
+    live=result.state;alarm=live.alarm.value;
+    syncGuards();
+    if(result.caught){resetAttempt();return;}
+    const now=getRoutine(live.clock).name;
+    if(now!==was)message('РАСПИСАНИЕ: '+now+'. Время '+formatPrisonClock(live.clock).time);
+    render();
+    if(live.tick%12===0)void persist();
+  },900);
 }
 function activateFloor(next,withVision=true){
   floor=next;world=worlds[next];entities=entitiesByFloor[next];
@@ -474,7 +505,8 @@ async function init(){
     const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
   });
   render();
+  startPrisonSimulation();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
