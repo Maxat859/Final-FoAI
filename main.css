@@ -162,3 +162,5 @@ button[disabled] {opacity:.42;cursor:not-allowed;}
 .map-toolbar {flex-wrap:wrap;align-items:center;}
 #game-weekday {color:#e1b25c;font-weight:700;white-space:nowrap;}
 #game-clock {font-size:15px;font-weight:900;color:#e8eced;font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+.routine-status{background:#122434;border:2px solid #3a5367;border-top:0;padding:8px 12px;color:#a8c4d3;font-size:11px;letter-spacing:.04em;line-height:1.5;}
