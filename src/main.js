@@ -44,6 +44,7 @@ let lastTickTimestamp=null;
 let residents=createResidentRoster(worlds,DEFAULT_ENTITIES);
 function show(screen){
   for(const item of screens)item.hidden=item!==screen;
+  lastTickTimestamp=performance.now();
   if(screen===$('main-menu')||screen===$('settings-screen'))audio.stopAmbient();
 }
 function updateAudioControls(){
@@ -287,7 +288,7 @@ function startPrisonSimulation(){
   if(patrolTimer!==null)return;
   patrolTimer=window.setInterval(()=>{
     const now=performance.now();
-    const elapsed=lastTickTimestamp===null?900:Math.max(0,Math.min(1150,now-lastTickTimestamp));
+    const elapsed=lastTickTimestamp===null?900:Math.max(0,now-lastTickTimestamp);
     lastTickTimestamp=now; // Pauses never get counted when gameplay resumes.
     if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
        escorting||!['free','classroom'].includes(storyStage)||mission.finished)return;
@@ -683,6 +684,10 @@ async function init(){
     const direction=DIRECTIONS[event.code];if(direction){event.preventDefault();move(direction);}
   });
   render();
+  document.addEventListener('visibilitychange',()=>{
+    // Never add hidden-tab time when the browser throttles interval callbacks.
+    lastTickTimestamp=performance.now();
+  });
   startPrisonSimulation();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
   window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getNightPhase:()=>nightPhase(live.clock),getResidents:()=>structuredClone(residents),getInspectors:()=>entitiesByFloor[1].filter(e=>e.id.startsWith('rollcall-inspector')).map(e=>({row:e.row,col:e.col,moving:e.moving})),getFloor:()=>floor,getStaff:()=>securitySummary(live,floor),getPrisonTime:()=>formatPrisonClock(live.clock),getDayLengthMs:()=>REAL_DAY_MS,setPrisonTime:minutes=>{live={...live,clock:makePrisonClock({minutes,day:live.clock?.day})};residents=updateResidents(residents,live.clock,worlds);syncResidents();updateVision();render();},getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>(f===floor?visibleWorld():createNightWorld(worlds[f],f,live.clock))?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
