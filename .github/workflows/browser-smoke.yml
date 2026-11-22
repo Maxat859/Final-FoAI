@@ -23,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Run all Node.js unit and integration tests
+        run: npm test
       - name: Install browser runner
         run: |
           npm install --no-save playwright@1.57.0
