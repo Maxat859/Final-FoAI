@@ -110,6 +110,7 @@ function mark(key){
   mission=markMission(mission,key);
   if(key==='lockOpen'){worlds[1][11][14]='D';unlockedByFloor[1].add(doorId(11,14));updateVision();message('CSP-замок открыт! Центральная решётка больше не блокирует проход.');}
   else message('Задание выполнено: '+OBJECTIVES.find(x=>x[0]===key)?.[1]);
+  audio.play(key==='finished'?'complete':'success');
   render();void persist();
 }
 function unlockDoor(door){
@@ -364,6 +365,8 @@ async function init(){
     getProgress:()=>learningProgress,getMistakes:()=>mistakeJournal,
     onLessonComplete:onLessonCompleted,recordMistake,
     onWake:()=>{void guardArrives();},onEscortStart:()=>{void beginEscort();},
+    playSound:event=>audio.play(event),speak:text=>audio.speak(text),stopVoice:()=>audio.cancelSpeech(),
+    soundState:()=>audio.getState(),
     mark,raiseAlarm,unlockDoor,
     portraitFor:(person)=>{
       const named=new Set(['erasyl','arman','ruslan','guard','daniyar','madina','timur']);
@@ -397,6 +400,7 @@ async function init(){
     setPuzzleModule:value=>{cspModule=value;},getPuzzleModule:()=>cspModule
   });
   $('play-btn').addEventListener('click',()=>{
+    void audio.unlock().then(ok=>{if(ok)audio.play(storyStage==='wake'?'wake':'click');});
     show($('game-screen'));$('tools-popup').hidden=true;renderer.resize();render();
     message('Этаж '+floor+'. Основы языков доступны в классе, библиотеке и у Армана.');
     if(storyStage==='wake'){
@@ -410,11 +414,28 @@ async function init(){
     await storage.set('progress',null);
     window.location.reload();
   });
-  $('settings-btn').addEventListener('click',()=>show($('settings-screen')));
+  $('settings-btn').addEventListener('click',()=>{audio.play('click');show($('settings-screen'));});
+  $('audio-enabled').addEventListener('change',event=>{
+    configureAudio({enabled:event.target.checked});
+    if(event.target.checked)void audio.unlock().then(ok=>{if(ok)audio.play('click');});
+  });
+  $('audio-volume').addEventListener('input',event=>{
+    configureAudio({volume:Number(event.target.value)/100});
+  });
+  $('audio-voice').addEventListener('change',event=>{
+    configureAudio({voice:event.target.checked});
+  });
+  $('sound-toggle').addEventListener('click',()=>{
+    const next=!audio.getSettings().enabled;
+    configureAudio({enabled:next});
+    if(next)void audio.unlock().then(ok=>{if(ok)audio.play('click');});
+  });
   $('back-btn').addEventListener('click',()=>show($('main-menu')));
   $('exit-btn').addEventListener('click',()=>show($('main-menu')));
   $('language-select').addEventListener('change',()=>{void storage.set('language',$('language-select').value);});
   const savedLang=await storage.get('language','python');if(['python','go'].includes(savedLang))$('language-select').value=savedLang;
+  audio.setSettings(sanitizeAudioSettings(await storage.get('audioSettings',null)));
+  updateAudioControls();
   $('panel-actions').addEventListener('click',event=>{
     const button=event.target.closest('[data-panel]');
     if(button){$('tools-popup').hidden=true;void panels.open(button.dataset.panel);}
@@ -451,6 +472,6 @@ async function init(){
   });
   render();
   message('Ты проснулся в камере. Ищи двери с заданиями, а на лестнице нажимай E для смены этажа.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
+  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size,getWorldState:()=>structuredClone(live),getVisibleCount:()=>visible.size,getExploredCount:()=>seen.size,getUnlockedDoors:()=>[...unlockedDoors],getStoryStage:()=>storyStage,getLearningProgress:()=>structuredClone(learningProgress),getMistakeCount:()=>mistakeJournal.length,getAudioState:()=>audio.getState(),getFloor:()=>floor,getExploredByFloor:()=>Object.fromEntries(FLOORS.map(f=>[f,seenByFloor[f].size])),getTile:(r,c,f=floor)=>worlds[f]?.[r]?.[c],warpTo:(r,c,f=floor)=>{if(!FLOORS.includes(f)||!isPassable(worlds[f],r,c))return false;activateFloor(f);player={...player,row:r,col:c};updateVision();syncGuards();render();return true;}};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
