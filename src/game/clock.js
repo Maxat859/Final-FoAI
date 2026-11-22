@@ -1,14 +1,19 @@
-// One game day is exactly 40 minutes of active play. Paused on menus/dialogs.
+// 40 minutes of active play per complete in-game 24-hour cycle.
+// Day 1 is Monday. Menus and learning dialogs pause the clock.
 export const DAY_MS=40*60*1000;
 export const HOUR_MS=DAY_MS/24;
+export const WEEKDAYS=['ПОНЕДЕЛЬНИК','ВТОРНИК','СРЕДА','ЧЕТВЕРГ','ПЯТНИЦА','СУББОТА','ВОСКРЕСЕНЬЕ'];
 export function createClock(savedMs=0){
-  let elapsed=((Number(savedMs)||0)%DAY_MS+DAY_MS)%DAY_MS;
+  let elapsed=Math.max(0,Number.isFinite(savedMs)?savedMs:0);
+  const withinDay=()=>elapsed%DAY_MS;
   return {
-    setElapsed(ms){elapsed=((Number(ms)||0)%DAY_MS+DAY_MS)%DAY_MS;},
-    advance(realMs){elapsed=(elapsed+Math.max(0,Math.min(1000,realMs)))%DAY_MS;},
+    setElapsed(ms){elapsed=Math.max(0,Number.isFinite(ms)?ms:0);},
+    advance(realMs){elapsed+=Math.max(0,Math.min(1000,realMs));},
     get elapsedMs(){return elapsed;},
-    get hour(){return Math.floor(elapsed/HOUR_MS);},
-    get minutes(){return Math.floor(elapsed/HOUR_MS*60)%60;},
+    get dayNumber(){return Math.floor(elapsed/DAY_MS)+1;},
+    get weekday(){return WEEKDAYS[(this.dayNumber-1)%7];},
+    get hour(){return Math.floor(withinDay()/HOUR_MS);},
+    get minutes(){return Math.floor(withinDay()/HOUR_MS*60)%60;},
     get time(){return String(this.hour).padStart(2,'0')+':'+String(this.minutes).padStart(2,'0');},
     get night(){return this.hour>=20||this.hour<6;},
     get phase(){
