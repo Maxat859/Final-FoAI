@@ -101,6 +101,7 @@ function render(){
       target?.kind==='library'?'E — ЗАЙТИ В БИБЛИОТЕКУ · УЧИТЬСЯ':
       stair?'E — '+(floor===1?'ПОДНЯТЬСЯ НА 2 ЭТАЖ':'СПУСТИТЬСЯ НА 1 ЭТАЖ')+' · ЛЕСТНИЦА':
       door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
+      target?.kind==='dog'?'E — СЛУЖЕБНАЯ СОБАКА '+target.name.toUpperCase():
       target?.kind==='npc'?'E — ПОГОВОРИТЬ С '+target.name.toUpperCase():
       target?'E — '+target.name.toUpperCase():
       'WASD — ХОДИТЬ · E — ВЗАИМОДЕЙСТВИЕ · M — КАРТА';
@@ -204,6 +205,7 @@ function interact(){
   if(door){audio.play('bars');void panels.open('door',door);return;}
   const target=nearestInteraction(player,world,entities,floor);
   if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
+  if(target.kind==='dog'){audio.play('dog');message('Служебная собака '+target.name+' ждёт рядом с полицейским.');return;}
   if(target.kind==='npc'){void panels.open('npc',target);return;}
   const mapping={classroom:'classroom',library:'library',lock:'lock',cctv:'cctv',
     dossier:'dossiers',dossiers:'dossiers',code:'code',bayes:'bayes',
