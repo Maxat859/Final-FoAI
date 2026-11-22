@@ -19,6 +19,9 @@ import {makeEscortPath,GUARD_APPROACH,CLASSROOM_DESK} from './game/escort.js';
 import {validateProgress} from './education/curriculum.js';
 import {createSoundEngine,sanitizeAudioSettings} from './audio/soundEngine.js';
 import {facingFromStep} from './ui/characterSprite.js';
+import {CELL_BED,CLASS_START,nightPhase,cellsLocked,nearBunk,createNightWorld,
+  nightGateAt,createResidentRoster,updateResidents,nightlyAnnouncement,
+  nextMorningClock} from './game/nightRoutine.js';
 
 const $=id=>document.getElementById(id);
 const screens=[$('main-menu'),$('settings-screen'),$('game-screen')];
@@ -37,6 +40,7 @@ let cspModule=null,panels=null,live=createLiveWorld(),introSeen=false;
 let storyStage='wake',escorting=false,learningProgress=validateProgress(null),mistakeJournal=[];
 let moveAnimationToken=0;
 let patrolTimer=null;
+let residents=createResidentRoster(worlds,DEFAULT_ENTITIES);
 function show(screen){
   for(const item of screens)item.hidden=item!==screen;
   if(screen===$('main-menu')||screen===$('settings-screen'))audio.stopAmbient();
@@ -65,16 +69,33 @@ function configureAudio(next){
   void storage.set('audioSettings',audio.getSettings());
 }
 function message(value){$('game-message').textContent=value;}
+function visibleWorld(){return createNightWorld(world,floor,live.clock);}
+function syncResidents(){
+  for(const p of residents){
+    const list=entitiesByFloor[p.floor],current=list.find(x=>x.id===p.id);
+    const payload={...p,spriteId:ASSET_IDS.prisoner};
+    if(current)Object.assign(current,payload);
+    else list.push(payload);
+  }
+}
 function updateVision(){
-  visible=computeFieldOfView(world,player.row,player.col);
+  visible=computeFieldOfView(visibleWorld(),player.row,player.col);
   for(const tile of visible)seen.add(tile);
 }
 function render(){
-  renderer.frame({world,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor,clock:live.clock});
+  const currentWorld=visibleWorld();
+  renderer.frame({world:currentWorld,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor,clock:live.clock});
   const now=formatPrisonClock(live.clock);
   const clockDisplay=$('prison-clock');if(clockDisplay)clockDisplay.textContent=now.time;
   const scheduleDisplay=$('prison-routine');if(scheduleDisplay)scheduleDisplay.textContent=now.name;
   $('game-screen').dataset.timeOfDay=now.phase;
+  const phase=nightPhase(live.clock);
+  $('game-screen').dataset.prisonPhase=phase;
+  const routineStatus=$('night-status');
+  if(routineStatus)routineStatus.textContent=phase==='sleep'?'СОН / НОЧНОЕ ДЕЖУРСТВО':
+    phase==='rollcall'?'ВЕЧЕРНЯЯ ПЕРЕКЛИЧКА':
+    phase==='return'?'ЖИЛЫЕ БЛОКИ ЗАКРЫТЫ':
+    phase==='wake'?'УТРЕННИЙ ПОДЪЁМ':'СВОБОДНЫЕ ЗАНЯТИЯ';
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col,floor);
   const indicator=$('floor-indicator');if(indicator)indicator.textContent='ЭТАЖ '+floor+' / 2';
@@ -94,10 +115,13 @@ function render(){
   const hint=$('action-prompt');
   if(hint){
     const stair=stairAtPlayer();
-    const door=adjacentDoor(world,player,unlockedDoors);
-    const target=nearestInteraction(player,world,entities,floor);
+    const door=adjacentDoor(currentWorld,player,unlockedDoors);
+    const target=nearestInteraction(player,currentWorld,entities,floor);
+    const bed=nearBunk(world,player)&&cellsLocked(live.clock);
     hint.textContent=escorting?'ОХРАННИК ПРОВОДИТ В КЛАСС · СЮЖЕТНЫЙ ЭПИЗОД':
       storyStage==='guard'?'E — ПОГОВОРИТЬ С ОХРАННИКОМ':
+      bed?'E — ЛЕЧЬ СПАТЬ ДО УТРА · Z — СОН':
+      target?.sleeping?'ТИХО: '+target.name.toUpperCase()+' СПИТ':
       target?.kind==='library'?'E — ЗАЙТИ В БИБЛИОТЕКУ · УЧИТЬСЯ':
       stair?'E — '+(floor===1?'ПОДНЯТЬСЯ НА 2 ЭТАЖ':'СПУСТИТЬСЯ НА 1 ЭТАЖ')+' · ЛЕСТНИЦА':
       door?'E — ДВЕРЬ '+DIFFICULTY_LABEL[door.difficulty]+' · РЕШИТЬ ЗАДАНИЕ':
@@ -109,7 +133,7 @@ function render(){
 }
 async function persist(){
   await storage.set('progress',{
-    mapVersion:4,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
+    mapVersion:5,floor,player,mission,alarm,live,introSeen,storyStage,learningProgress,mistakeJournal,
     seenByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...seenByFloor[f]]])),
     unlockedByFloor:Object.fromEntries(FLOORS.map(f=>[f,[...unlockedByFloor[f]]])),
     seen:[...seenByFloor[1]],unlockedDoors:[...unlockedByFloor[1]]
@@ -150,10 +174,13 @@ function startPrisonSimulation(){
     if($('game-screen').hidden||document.hidden||!panels||panels.isOpen()||
        escorting||!['free','classroom'].includes(storyStage)||mission.finished)return;
     const was=getRoutine(live.clock).name;
+    const beforeClock=live.clock;
     const result=advanceLiveWorld(live,player,world,floor);
     live=result.state;alarm=live.alarm.value;
+    handleNightChange(beforeClock);
     syncGuards();
     if(result.caught){resetAttempt();return;}
+    if(panels.isOpen()){render();void persist();return;}
     const now=getRoutine(live.clock).name;
     if(now!==was)message('РАСПИСАНИЕ: '+now+'. Время '+formatPrisonClock(live.clock).time);
     if(live.tick%14===0&&live.dogs?.some(d=>d.floor===floor&&
@@ -199,12 +226,18 @@ function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
   if(escorting)return;
   audio.play('click');
+  if(nearBunk(world,player)&&cellsLocked(live.clock)){void panels.open('sleep-bunk');return;}
   if(storyStage==='guard'){void panels.open('guard-arrival');return;}
   if(stairAtPlayer()){changeFloor();return;}
-  const door=adjacentDoor(world,player,unlockedDoors);
+  const nightMap=visibleWorld();
+  const adjacentLock=[[1,0],[-1,0],[0,1],[0,-1]].some(([dr,dc])=>
+    nightGateAt(floor,player.row+dr,player.col+dc)&&cellsLocked(live.clock));
+  if(adjacentLock){audio.play('bars');message('НОЧНАЯ ПРОВЕРКА: камера закрыта до утреннего подъёма.');return;}
+  const door=adjacentDoor(nightMap,player,unlockedDoors);
   if(door){audio.play('bars');void panels.open('door',door);return;}
-  const target=nearestInteraction(player,world,entities,floor);
+  const target=nearestInteraction(player,nightMap,entities,floor);
   if(!target){message('Подойди к двери или персонажу. Нажми E или кнопку ДЕЙСТВИЕ.');return;}
+  if(target.sleeping){message(target.name+' сейчас спит. Поговорите утром.');return;}
   if(target.kind==='dog'){audio.play('dog');message('Служебная собака '+target.name+' ждёт рядом с полицейским.');return;}
   if(target.kind==='npc'){void panels.open('npc',target);return;}
   const mapping={classroom:'classroom',library:'library',lock:'lock',cctv:'cctv',
@@ -220,13 +253,17 @@ function move(direction){
   const facing=direction[2]||player.facing;
   if(player.facing!==facing){player={...player,facing};render();}
   const targetRow=player.row+direction[0],targetCol=player.col+direction[1];
-  const door=findDoor(world,targetRow,targetCol);
+  const nightMap=visibleWorld();
+  if(cellsLocked(live.clock)&&nightGateAt(floor,targetRow,targetCol)){
+    audio.play('bars');message('КАМЕРА ЗАКРЫТА НА НОЧЬ. Дверь откроют утром.');return;
+  }
+  const door=findDoor(nightMap,targetRow,targetCol);
   if(door&&!unlockedDoors.has(door.id)){
     audio.play('bars');
     message('Закрытая дверь: '+DIFFICULTY_LABEL[door.difficulty]+'. Реши задание, чтобы пройти.');
     void panels.open('door',door);return;
   }
-  const outcome=attemptMove(player,direction,world,entities);
+  const outcome=attemptMove(player,direction,nightMap,entities);
   if(!outcome.moved){audio.play('blocked');message(outcome.reason);render();return;}
   player={...outcome.player,moving:true,walkFrame:((player.walkFrame??0)+1)%2};
   audio.play('step');
@@ -235,8 +272,10 @@ function move(direction){
     if(token===moveAnimationToken){player={...player,moving:false};render();}
   },145);
   updateVision();
+  const beforeClock=live.clock;
   const simulation=advanceLiveWorld(live,player,world,floor);
   live=simulation.state;alarm=live.alarm.value;
+  handleNightChange(beforeClock);
   syncGuards();
   if(simulation.caught){resetAttempt();return;}
   if(world[player.row][player.col]==='U'||world[player.row][player.col]==='N'){
