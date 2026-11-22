@@ -100,14 +100,25 @@ export function createResidentRoster(worlds,original=[]){
   }
   // Reserve a distinct passable place beside bunks for each person.
   // This prevents overlapping sleeping sprites and blocked wardrobe spots.
-  const occupied=new Set();
+  const occupied=new Set(),dayOccupied=new Set();
   for(const p of residents){
     const w=worlds[p.floor],room=chooseCell(p.floor,0);
     const key=position=>p.floor+':'+position.row+':'+position.col;
-    if(!isPassable(w,p.day.row,p.day.col)){
-      const suitable=EXPANSION_ROOMS.find(r=>r.floor===p.floor&&r.type==='study');
-      p.day={row:suitable.row+3,col:suitable.col+3};
+    if(!isPassable(w,p.day.row,p.day.col)||dayOccupied.has(key(p.day))){
+      const center=p.day;
+      const alternatives=[];
+      for(let radius=1;radius<=12;radius++)
+        for(let dr=-radius;dr<=radius;dr++)for(let dc=-radius;dc<=radius;dc++){
+          if(Math.abs(dr)+Math.abs(dc)!==radius)continue;
+          const row=center.row+dr,col=center.col+dc;
+          if(isPassable(w,row,col)&&!dayOccupied.has(key({row,col})))
+            alternatives.push({row,col});
+        }
+      if(!alternatives.length)throw Error('No free daytime location for '+p.id);
+      p.day=alternatives[0];
+      p.row=p.day.row;p.col=p.day.col;
     }
+    dayOccupied.add(key(p.day));
     if(!isPassable(w,p.home.row,p.home.col)||occupied.has(key(p.home))){
       const center=p.home;
       let options=[];
