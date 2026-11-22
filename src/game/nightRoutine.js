@@ -91,7 +91,7 @@ export function createResidentRoster(worlds,original=[]){
   for(const floor of [1,2]){
     for(let i=0;i<12;i++){
       const index=floorCounters[floor]++;
-      const room=chooseCell(floor,index),home=seat(room,index%4);
+      const room=chooseCell(floor,index),home=seat(room,Math.floor(index/2));
       const day=station(choosePublicSpace(floor,i),i);
       residents.push({id:'resident-'+floor+'-'+String(i+1).padStart(2,'0'),
         name:names[(i+(floor-1)*7)%names.length],role:'resident',floor,
