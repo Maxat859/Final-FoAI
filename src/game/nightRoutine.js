@@ -98,23 +98,32 @@ export function createResidentRoster(worlds,original=[]){
         row:day.row,col:day.col,day,home,walkFrame:0,moving:false,sleeping:false,facing:'down'});
     }
   }
-  // If a floor-plan changed, seek a free tile in the same room rather than
-  // producing NPCs inside bunk furniture, walls or toilets.
+  // Reserve a distinct passable place beside bunks for each person.
+  // This prevents overlapping sleeping sprites and blocked wardrobe spots.
+  const occupied=new Set();
   for(const p of residents){
-    const w=worlds[p.floor];
-    for(const key of ['home','day']){
-      if(isPassable(w,p[key].row,p[key].col))continue;
-      const center=p[key];
-      let found=null;
-      for(let distance=1;distance<=6&&!found;distance++){
-        for(let dr=-distance;dr<=distance&&!found;dr++)for(let dc=-distance;dc<=distance;dc++){
-          if(Math.abs(dr)+Math.abs(dc)>distance)continue;
-          if(isPassable(w,center.row+dr,center.col+dc)){found={row:center.row+dr,col:center.col+dc};break;}
-        }
-      }
-      if(!found)throw Error('No room for resident '+p.id);
-      p[key]=found;
+    const w=worlds[p.floor],room=chooseCell(p.floor,0);
+    const key=position=>p.floor+':'+position.row+':'+position.col;
+    if(!isPassable(w,p.day.row,p.day.col)){
+      const suitable=EXPANSION_ROOMS.find(r=>r.floor===p.floor&&r.type==='study');
+      p.day={row:suitable.row+3,col:suitable.col+3};
     }
+    if(!isPassable(w,p.home.row,p.home.col)||occupied.has(key(p.home))){
+      const center=p.home;
+      let options=[];
+      for(let r=center.row-4;r<=center.row+4;r++)
+        for(let c=center.col-4;c<=center.col+4;c++){
+          const cellRoom=EXPANSION_ROOMS.find(x=>x.floor===p.floor&&x.type==='cell'&&
+            r>x.row+2&&r<x.row+x.height-1&&c>x.col&&c<x.col+x.width-1);
+          if(!cellRoom||!isPassable(w,r,c)||occupied.has(key({row:r,col:c})))continue;
+          options.push({row:r,col:c,distance:Math.abs(r-center.row)+Math.abs(c-center.col)});
+        }
+      options.sort((a,b)=>a.distance-b.distance||a.row-b.row||a.col-b.col);
+      const found=options[0];
+      if(!found)throw Error('No free sleeping location for '+p.id);
+      p.home={row:found.row,col:found.col};
+    }
+    occupied.add(key(p.home));
   }
   return residents;
 }
