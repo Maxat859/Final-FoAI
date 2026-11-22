@@ -131,7 +131,7 @@ try{
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,true);
   await page.keyboard.press('Escape');
   await page.locator('#settings-btn').click();
-  await page.locator('#audio-volume').fill('58');
+  await page.locator('#audio-volume').evaluate(el=>{el.value='58';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('#audio-enabled').uncheck();
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).enabled,false);
   assert.equal((await page.evaluate(()=>window.QAMAL_DEBUG.getAudioState())).volume,.58);
