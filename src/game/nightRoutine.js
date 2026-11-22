@@ -205,33 +205,68 @@ export function restoreResidents(fresh,saved,worlds){
   });
 }
 /** Move one tile per simulation update; never teleport on a shift transition. */
+/** One-tile, simultaneous NPC updates: occupants can trade places in tight halls. */
 export function updateResidents(current,clock,worlds,{steps=1,blockedPositions=[]}={}){
-  const routine=residentRoutine(clock);
-  const occupied=new Set(current.map(residentPosition));
-  for(const place of blockedPositions)
-    if(place&&Number.isInteger(place.floor)&&Number.isInteger(place.row)&&Number.isInteger(place.col))
-      occupied.add(place.floor+':'+place.row+','+place.col);
-  return current.map(p=>{
-    const target=p.stations?.[routine]||((routine==='sleep'||routine==='return')?p.home:p.day);
-    const home=p.row===p.home.row&&p.col===p.home.col;
-    const atTarget=p.row===target.row&&p.col===target.col;
-    const sleeping=routine==='sleep'&&home;
-    if(atTarget)return {...p,sleeping,moving:false,animation:sleeping?'sleep':'idle',pathSteps:[]};
-    const world=worlds[p.floor],key=target.row+','+target.col;
-    const cached=p.routeTarget===key&&Array.isArray(p.pathSteps)&&p.pathSteps.length
-      ?p.pathSteps:[];
-    let path=cached.length?cached:planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
-    // Route cache can contain stale moves after a save or an interrupted walk.
+  const phase=residentRoutine(clock);
+  const key=(floor,row,col)=>floor+':'+row+','+col;
+  const external=new Set(blockedPositions.filter(p=>p&&Number.isInteger(p.floor)&&
+    Number.isInteger(p.row)&&Number.isInteger(p.col)).map(p=>key(p.floor,p.row,p.col)));
+  const held=new Map(current.map((p,i)=>[key(p.floor,p.row,p.col),i]));
+  const desired=new Map(),claims=new Set();
+  const plans=current.map((p,i)=>{
+    const target=p.stations?.[phase]||((phase==='sleep'||phase==='return')?p.home:p.day);
+    const goal=target.row+','+target.col;
+    const atGoal=p.row===target.row&&p.col===target.col;
+    if(atGoal)return {goal,target,path:[],next:null};
+    const world=worlds[p.floor];
+    const cached=p.routeTarget===goal&&Array.isArray(p.pathSteps)?p.pathSteps:[];
+    let path=cached.length?cached:planPatrol(world,{x:p.col,y:p.row},
+      {x:target.col,y:target.row}).slice(1);
     if(path.length&&Math.abs(path[0].x-p.col)+Math.abs(path[0].y-p.row)!==1)
       path=planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
-    const point=path[0],nextKey=point&&p.floor+':'+point.y+','+point.x;
-    if(!point||!isPassable(world,point.y,point.x)||occupied.has(nextKey))
-      return {...p,sleeping:false,moving:false,animation:'idle',routeTarget:key,pathSteps:path};
-    occupied.delete(residentPosition(p));
-    occupied.add(nextKey);
-    const next={row:point.y,col:point.x};
+    let next=path[0],nextKey=next&&key(p.floor,next.y,next.x);
+    if(next&&external.has(nextKey)){
+      // A stationary officer or the protagonist occupies the next tile.
+      // Replan around it instead of permanently blocking the whole hallway.
+      const detour=world.map(row=>row.slice());
+      for(const obstacle of blockedPositions.filter(x=>x?.floor===p.floor))
+        if(detour[obstacle.row]?.[obstacle.col]!==undefined)
+          detour[obstacle.row][obstacle.col]='#';
+      path=planPatrol(detour,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
+      next=path[0];nextKey=next&&key(p.floor,next.y,next.x);
+    }
+    if(!next||!isPassable(world,next.y,next.x)||external.has(nextKey)||
+       claims.has(nextKey))return {goal,target,path,next:null};
+    claims.add(nextKey);
+    desired.set(i,nextKey);
+    return {goal,target,path,next};
+  });
+
+  // A resident may enter another resident's tile only if that occupant
+  // leaves in the same update. A dependency cycle is a valid simultaneous swap.
+  const status=new Map(),stack=new Set();
+  function canMove(i){
+    if(status.has(i))return status.get(i);
+    if(!desired.has(i))return false;
+    if(stack.has(i))return true;
+    stack.add(i);
+    const owner=held.get(desired.get(i));
+    const allowed=owner===undefined||canMove(owner);
+    stack.delete(i);
+    status.set(i,allowed);
+    return allowed;
+  }
+  return current.map((p,i)=>{
+    const plan=plans[i],moving=Boolean(plan.next)&&canMove(i);
+    const atHome=p.row===p.home.row&&p.col===p.home.col;
+    if(!moving){
+      const sleeping=phase==='sleep'&&atHome;
+      return {...p,sleeping,moving:false,animation:sleeping?'sleep':'idle',
+        routeTarget:plan.goal,pathSteps:plan.path};
+    }
+    const next={row:plan.next.y,col:plan.next.x};
     return {...p,...next,sleeping:false,moving:true,animation:'walk',
-      routeTarget:key,pathSteps:path.slice(1),
+      routeTarget:plan.goal,pathSteps:plan.path.slice(1),
       walkFrame:(p.walkFrame||0)+1,facing:facingFromStep(p,next,p.facing)};
   });
 }
