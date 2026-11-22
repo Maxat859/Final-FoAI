@@ -5,7 +5,7 @@ import {START_POSITION,DIRECTIONS,discover,attemptMove,nearestInteraction} from 
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
 import {createStorage} from './storage/indexedDb.js';
 import {createClock,HOUR_MS} from './game/clock.js';
-import {updateGuards} from './game/guardSchedule.js';
+import {updatePrisonLife,routineLabel} from './game/prisonRoutine.js';
 import {loadAssetManifest} from './ui/assetLoader.js';
 import {createRenderer} from './ui/gameCanvas.js';
 import {createPanels} from './ui/panels.js';
@@ -32,6 +32,7 @@ function render(){
   $('game-clock').textContent=clock.time;
   $('game-weekday').textContent=`ДЕНЬ ${clock.dayNumber} · ${clock.weekday}`;
   $('day-phase').textContent=clock.phase;
+  $('routine-status').textContent=`Заключённые: ${clock.night?'отдых':'режим дня'} · Охрана: ${clock.night?'ночная смена':'дневная смена'}`;
   $('map-size-label').textContent=`${COLS} × ${ROWS} КЛЕТОК`;
   $('zone-name').textContent=zoneAt(player.row,player.col);
   $('pos-label').textContent=`R:${player.row} C:${player.col} · ${player.steps} ШАГОВ`;
@@ -47,7 +48,7 @@ function updateAssets(msg){$('asset-status').textContent=msg;}
 function interact(){
   const target=nearestInteraction(player,world,entities);
   if(!target){message('Рядом нет объекта. Исследуй карту или используй меню справа.');return;}
-  if(target.kind==='npc'){message(target.role==='mentor'?'Арман: «Начни с учебных задач, потом планируй путь».':`${target.name}: «Будь внимателен к условиям задания».`);return;}
+  if(target.kind==='npc'){message(`${target.name}: ${routineLabel(target)}. `+(target.role==='mentor'?'Арман: «Начни с учебных задач, потом планируй путь».':'Следует расписанию тюрьмы.'));return;}
   const mapping={classroom:'code',lock:'lock',cctv:'cctv',dossier:'dossiers'};
   panels.open(mapping[target.kind]);
 }
@@ -126,8 +127,8 @@ async function init(){
     if(!$('game-screen').hidden && !panels?.isOpen()){
       clock.advance(delta);
       patrolAccumulator+=delta;
-      if(patrolAccumulator>=(clock.night?2000:3500)){
-        updateGuards(entities,world,player,clock.night);
+      if(patrolAccumulator>=(clock.night?2200:3200)){
+        updatePrisonLife(entities,world,player,clock);
         patrolAccumulator=0;
       }
       render();
@@ -136,6 +137,6 @@ async function init(){
   setInterval(()=>{if(!$('game-screen').hidden)void persist();},10000);
   render();
   message('Карта готова: исследуй тюрьму и открой задания через правую панель.');
-  window.QAMAL_DEBUG={getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size};
+  window.QAMAL_DEBUG={getNpcStates:()=>entities.map(e=>({id:e.id,row:e.row,col:e.col,state:e.aiState})),getClock:()=>({day:clock.dayNumber,weekday:clock.weekday,time:clock.time}),getPosition:()=>({...player}),getMission:()=>({...mission}),getDossierCount:()=>dossiersStore.count(),getAssets:()=>assets.images.size};
 }
 init().catch(error=>{console.error('[QAMAL]',error);updateAssets('Ошибка инициализации: '+error.message);});
