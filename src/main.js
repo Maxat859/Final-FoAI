@@ -5,6 +5,7 @@ import {START_POSITION,DIRECTIONS,discover,attemptMove,nearestInteraction} from 
 import {DEFAULT_MISSION,objective,canFinish,markMission,OBJECTIVES} from './game/mission.js';
 import {createStorage} from './storage/indexedDb.js';
 import {createClock,HOUR_MS} from './game/clock.js';
+import {updateGuards} from './game/guardSchedule.js';
 import {loadAssetManifest} from './ui/assetLoader.js';
 import {createRenderer} from './ui/gameCanvas.js';
 import {createPanels} from './ui/panels.js';
@@ -21,6 +22,7 @@ const world=createLevel(),entities=DEFAULT_ENTITIES.map(e=>({...e}));
 const storage=createStorage();
 const clock=createClock(6*HOUR_MS);
 let lastFrameTime=null;
+let patrolAccumulator=0;
 let player={...START_POSITION},seen=new Set(),mission={...DEFAULT_MISSION},alarm=0,route=[];
 let cspModule=null,panels=null;
 function show(screen){for(const item of screens)item.hidden=item!==screen;}
@@ -66,7 +68,6 @@ async function init(){
     if(Array.isArray(previous.seen))seen=new Set(previous.seen.filter(x=>typeof x==='string'));
     mission={...DEFAULT_MISSION,...previous.mission};
     alarm=Math.max(0,Math.min(100,Number(previous.alarm)||0));
-    if(Number.isFinite(previous.elapsedMs))clock.advance(0); // older saves remain compatible
     if(Number.isFinite(previous.elapsedMs))clock.setElapsed(previous.elapsedMs);
   }
   discover(world,seen,player.row,player.col,3);
@@ -123,6 +124,11 @@ async function init(){
     lastFrameTime=now;
     if(!$('game-screen').hidden && !panels?.isOpen()){
       clock.advance(delta);
+      patrolAccumulator+=delta;
+      if(patrolAccumulator>=(clock.night?2000:3500)){
+        updateGuards(entities,world,player,clock.night);
+        patrolAccumulator=0;
+      }
       render();
     }
   },250);
