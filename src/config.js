@@ -26,7 +26,10 @@ export const DEFAULT_ENTITIES = Object.freeze([
   {id:'arman',row:3,col:6,spriteId:ASSET_IDS.prisoner,name:'Арман',role:'mentor'},
   {id:'ruslan',row:16,col:7,spriteId:ASSET_IDS.prisoner,name:'Руслан',role:'npc'},
   {id:'guard1',row:10,col:21,spriteId:ASSET_IDS.guard,name:'Охранник',role:'guard'},
-  {id:'guard2',row:5,col:25,spriteId:ASSET_IDS.senior,name:'Старший охранник',role:'guard'}
+  {id:'guard2',row:5,col:25,spriteId:ASSET_IDS.senior,name:'Старший охранник',role:'guard'},
+  {id:'guard3',row:12,col:6,spriteId:ASSET_IDS.guard,name:'Патруль блока А',role:'guard'},
+  {id:'guard4',row:16,col:10,spriteId:ASSET_IDS.senior,name:'Дежурный блока Б',role:'guard'},
+  {id:'guard5',row:16,col:25,spriteId:ASSET_IDS.guard,name:'Патруль у выхода',role:'guard'}
 ]);
 export const ROOM_LABELS = [
   ['БЛОК A / КАМЕРЫ',1,1],['УЧЕБНЫЙ КЛАСС',12,1],['ОХРАНА / CCTV',21,1],
