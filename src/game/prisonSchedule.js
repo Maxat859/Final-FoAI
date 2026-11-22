@@ -1,6 +1,9 @@
 /** Fictional prison timetable; time advances when gameplay runs, not by wall clock. */
 export const START_TIME=6*60+30;
-export const MINUTES_PER_TICK=5;
+export const MINUTES_PER_TICK=0; // NPC actions and player steps must not speed up the clock.
+export const REAL_DAY_MS=40*60*1000;
+export const GAME_MINUTES_PER_DAY=24*60;
+export const REAL_MS_PER_GAME_MINUTE=REAL_DAY_MS/GAME_MINUTES_PER_DAY;
 export const SCHEDULE=[
   {from:0,name:'НОЧНАЯ ТИШИНА',phase:'night',duty:'night'},
   {from:6*60,name:'ПОДЪЁМ / ПЕРЕКЛИЧКА',phase:'dawn',duty:'day'},
@@ -16,12 +19,29 @@ export const SCHEDULE=[
 export function makePrisonClock(raw){
   const minutes=Number.isFinite(raw?.minutes)?Math.max(0,Math.floor(raw.minutes))%1440:START_TIME;
   const day=Number.isInteger(raw?.day)&&raw.day>0?raw.day:1;
-  return {minutes,day};
+  const remainder=Number(raw?.minuteFraction);
+  return Number.isFinite(remainder)&&remainder>=0&&remainder<1
+    ?{minutes,day,minuteFraction:remainder}:{minutes,day};
 }
 export function advancePrisonClock(clock,step=MINUTES_PER_TICK){
   const now=makePrisonClock(clock),extra=Math.max(0,Math.floor(Number(step)||0));
   const total=now.minutes+extra;
-  return {minutes:total%1440,day:now.day+Math.floor(total/1440)};
+  const next={minutes:total%1440,day:now.day+Math.floor(total/1440)};
+  if('minuteFraction' in now)next.minuteFraction=now.minuteFraction;
+  return next;
+}
+/** Exactly 40 minutes of active game time = one 24-hour prison day.
+ * Fractions are included in saved clocks so reloads don't lose progress.
+ */
+export function advancePrisonClockByRealTime(clock,elapsedMs){
+  const current=makePrisonClock(clock);
+  const millis=Number(elapsedMs);
+  if(!Number.isFinite(millis)||millis<=0)return current;
+  const elapsedMinutes=millis/REAL_MS_PER_GAME_MINUTE+(current.minuteFraction||0);
+  const wholeMinutes=Math.floor(elapsedMinutes+1e-10);
+  const fraction=Math.max(0,Math.min(0.9999999999,elapsedMinutes-wholeMinutes));
+  const stepped=advancePrisonClock(current,wholeMinutes);
+  return {...stepped,minuteFraction:fraction};
 }
 export function getRoutine(clock){
   const {minutes}=makePrisonClock(clock);
