@@ -68,6 +68,53 @@ export function createPanels(dialog,handlers){
     if(name==='door'){selectedDoor=data;doorAttempt=0;doorLanguage=handlers.language();await ensureExtraBank();drawDoor();}
     if(name==='npc'){npcId=data?.id??null;npcScript=getNpcScript(data);npcIndex=0;handlers.playSound?.('dialogue');renderNpc();}
     if(['classroom','library','mentor'].includes(name))learningUI.open(name,{language:handlers.language()});
+    if(name==='night-rollcall')inner.innerHTML=shell('17:00 — ВЕЧЕРНЯЯ ПЕРЕКЛИЧКА',
+      '<div class="prison-routine-scene">'+
+      '<img src="./assets/portraits/guard.svg" alt="Портрет дежурного охранника">'+
+      '<div><div class="routine-label">QAMAL / РЕЖИМ ДНЯ</div>'+
+      '<h3>Всем вернуться в жилые блоки!</h3>'+
+      '<p><strong>Дежурный охранник:</strong> «Начинается вечерняя проверка. Всем приготовиться к возвращению в камеры. После 20:00 жилые двери будут закрыты».</p>'+
+      '<p>Заключённые идут в свои жилые сектора. Ночные патрульные остаются на дежурстве, а дневная смена заканчивает обход.</p></div></div>'+
+      '<button data-close class="learning-main-button">ПОНЯТНО — ПРОДОЛЖИТЬ →</button>',
+      'STORY / ROLL CALL');
+    if(name==='night-return')inner.innerHTML=shell('20:00 — ВОЗВРАЩЕНИЕ В КАМЕРЫ',
+      '<div class="prison-routine-scene">'+
+      '<img src="./assets/portraits/guard.svg" alt="Дежурный сопровождает заключённых">'+
+      '<div><div class="routine-label">QAMAL / ЖИЛОЙ БЛОК</div>'+
+      '<h3>Служебные двери закрываются</h3>'+
+      '<p>Дежурный охранник сопроводил Ерасыла обратно в камеру. Заключённые занимают свои места, решётки закрываются до утреннего подъёма.</p>'+
+      '<p>Подойди к койке и нажми <kbd>E</kbd>, чтобы лечь спать и перейти к утру. Ночью постовые остаются на местах, а патрули продолжают обход.</p></div></div>'+
+      '<button data-close class="learning-main-button">ВЕРНУТЬСЯ В КАМЕРУ →</button>',
+      'STORY / CELLS LOCKED');
+    if(name==='night-lightsout')inner.innerHTML=shell('22:00 — ОТБОЙ',
+      '<div class="prison-routine-scene sleep-scene">'+
+      '<img src="./assets/portraits/erasyl.svg" alt="Ерасыл готовится ко сну">'+
+      '<div><div class="routine-label">QAMAL / НОЧНАЯ ТИШИНА</div>'+
+      '<h3>Тюрьма погрузилась в ночь</h3>'+
+      '<p>В жилых блоках выключен основной свет. Заключённые спят в своих камерах; коридоры освещают дежурные лампы.</p>'+
+      '<p>Нажми <kbd>E</kbd> рядом со своей койкой, чтобы пропустить ночь. Утром охранник снова приведёт тебя на занятия.</p></div></div>'+
+      '<div class="routine-buttons"><button id="routine-sleep" class="learning-main-button">ЛЕЧЬ СПАТЬ ДО УТРА →</button>'+
+      '<button data-close>ОСТАТЬСЯ В КАМЕРЕ</button></div>',
+      'STORY / LIGHTS OUT');
+    if(name==='sleep-bunk')inner.innerHTML=shell('ОТДЫХ В КАМЕРЕ',
+      '<div class="prison-routine-scene sleep-scene">'+
+      '<img src="./assets/portraits/erasyl.svg" alt="Ерасыл рядом с койкой">'+
+      '<div><div class="routine-label">QAMAL / ТИХИЙ ЧАС</div>'+
+      '<h3>Лечь спать до 06:00?</h3>'+
+      '<p>Всё выполненное и твои исследования сохранятся. Ночью продолжит дежурить охрана, а утром снова откроются двери жилых блоков.</p></div></div>'+
+      '<div class="routine-buttons"><button id="routine-sleep" class="learning-main-button">ДА, СПАТЬ ДО УТРА →</button>'+
+      '<button data-close>ЕЩЁ НЕ СПАТЬ</button></div>',
+      'STORY / BUNK');
+    if(name==='morning-wakeup')inner.innerHTML=shell('06:00 — НОВЫЙ ДЕНЬ',
+      '<div class="prison-routine-scene morning-scene">'+
+      '<img src="./assets/portraits/guard.svg" alt="Утренний дежурный охранник">'+
+      '<div><div class="routine-label">QAMAL / ДЕНЬ '+esc(data?.day||1)+'</div>'+
+      '<h3>Подъём! Впереди учебные занятия.</h3>'+
+      '<p><strong>Дежурный охранник:</strong> «Ерасыл, вставай. Жилые блоки открыты. После утренней проверки — завтрак и занятие по программированию».</p>'+
+      '<p>Все заключённые просыпаются, и коридоры снова наполняются людьми. Можешь отправиться с охранником в учебный класс или продолжить исследование тюрьмы.</p></div></div>'+
+      '<div class="routine-buttons"><button id="morning-to-class" class="learning-main-button">ПОЙТИ С ОХРАННИКОМ НА УРОК →</button>'+
+      '<button data-close>ПОКА ИССЛЕДОВАТЬ КОМПЛЕКС</button></div>',
+      'STORY / MORNING');
     if(name==='guard-arrival'){
       handlers.speak?.('Ерасыл, подъём. Сегодня ты идёшь на учебное занятие. Я провожу тебя до класса.');
       inner.innerHTML=shell('ПРИКАЗ / УЧЕБНЫЙ КЛАСС',
@@ -84,8 +131,8 @@ export function createPanels(dialog,handlers){
       '<p class="wake-hint">WASD — идти · E — открыть дверь / поговорить · M — карта · на лестнице E — сменить этаж</p>'+
       '<button id="wake-start" class="wake-start">ВСТАТЬ С КОЙКИ И НАЧАТЬ →</button>'+
       '</div>', 'STORY / CELL 01');
-    if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники двигаются после твоих ходов. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
-    if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Двери отмечены 1/2/3 звёздами по сложности. На лестнице U или N нажми E для перехода между этажами. Левое и правое крыло, второй этаж, архив, столовая, медпункт и камеры постепенно открываются по мере исследования.</p>`);
+    if(name==='intro')inner.innerHTML=shell('ГЛАВА 01 — ДЕЛО ЕРАСЫЛА',`<div class="chapter-intro"><div class="scene-number">01 / QAMAL</div><h3>Истина скрыта в системе.</h3><p>Ерасыл оказался в вымышленном комплексе QAMAL-01 после обвинения в утечке данных. В его электронном досье обнаружились противоречия.</p><p>Поговори с Арманом, изучи классы и виртуальные камеры, реши логический замок и найди путь к выходу.</p><p class="panel-note">Охранники самостоятельно обходят тюрьму по расписанию. Слишком высокая тревога возвращает героя к началу, но выполненные задания сохраняются.</p><button data-close>НАЧАТЬ ГЛАВУ →</button></div>`,'STORY / CHAPTER 01');
+    if(name==='help')inner.innerHTML=shell('КАК ИГРАТЬ',`<p>Твой персонаж — Ерасыл. Камера следует за тобой, а комнаты открываются только в пределах обзора. Уже исследованные участки остаются затемнёнными на карте. WASD / стрелки: перемещение; <kbd>E</kbd> — взаимодействие рядом с объектом; <kbd>M</kbd> — карта; <kbd>Esc</kbd> — закрыть окно.</p><p class="panel-note">Ночью с 20:00 до 06:00 двери камер закрыты, а возле койки клавиша E позволяет проспать до утра. Двери заданий отмечены 1/2/3 звёздами. На лестнице U или N нажми E для перехода между этажами. Левое и правое крыло, второй этаж, архив, столовая, медпункт и камеры постепенно открываются по мере исследования.</p>`);
     if(name==='code'){await ensureExtraBank();drawCode();}
     if(name==='bayes')drawBayes();
     if(name==='map')drawMap();
@@ -292,6 +339,8 @@ export function createPanels(dialog,handlers){
     if(e.target.id==='practice-difficulty'){practiceDifficulty=e.target.value;practiceIndex=0;drawCode();}
   });
   dialog.addEventListener('click',async e=>{
+    if(e.target.id==='routine-sleep'){close();handlers.onSleepUntilMorning?.();return;}
+    if(e.target.id==='morning-to-class'){close();handlers.onMorningClass?.();return;}
     if(e.target.id==='wake-start'){close();handlers.onWake?.();return;}
     if(e.target.id==='escort-start'){close();handlers.onEscortStart?.();return;}
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
