@@ -89,6 +89,7 @@ function render(){
   renderer.frame({world:currentWorld,player,entities,seen,visible,route,alarm,mission,unlockedDoors:[...unlockedDoors],floor,clock:live.clock});
   const now=formatPrisonClock(live.clock);
   const clockDisplay=$('prison-clock');if(clockDisplay)clockDisplay.textContent=now.time;
+  const weekdayDisplay=$('prison-weekday');if(weekdayDisplay)weekdayDisplay.textContent=`ДЕНЬ ${now.day} · ${now.weekday}`;
   const scheduleDisplay=$('prison-routine');if(scheduleDisplay)scheduleDisplay.textContent=now.name;
   $('game-screen').dataset.timeOfDay=now.phase;
   const phase=nightPhase(live.clock);
