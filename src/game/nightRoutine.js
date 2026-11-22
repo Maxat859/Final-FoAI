@@ -62,7 +62,9 @@ export function createNightWorld(world,floor,clock){
 const names=['Марат','Нурали','Санжар','Али','Мейрам','Олжас',
   'Асем','Лаура','Рауан','Дамир','Аяжан','Ерлан','Зарина','Бекзат'];
 function seat(room,index){
-  return {row:room.row+3+(index%2),col:room.col+3+Math.floor(index/2)*2};
+  // Each small block has 15 unique floor spots beside bunks.
+  return {row:room.row+3+Math.floor((index%15)/5),
+    col:room.col+2+(index%5)};
 }
 function station(room,i){
   return {row:room.row+room.height-2,col:room.col+2+(i%3)};
@@ -81,7 +83,7 @@ export function createResidentRoster(worlds,original=[]){
   const originals=original.filter(x=>x&&x.id&&!['guard','police','dog'].includes(x.role));
   for(const e of originals){
     const floor=e.floor||1,index=floorCounters[floor]++;
-    const room=chooseCell(floor,index),home=seat(room,index%4);
+    const room=chooseCell(floor,index),home=seat(room,Math.floor(index/2));
     const day={row:e.row,col:e.col};
     residents.push({id:e.id,name:e.name,role:e.role||'npc',floor,
       row:day.row,col:day.col,day,home,walkFrame:0,moving:false,sleeping:false,facing:'down'});
