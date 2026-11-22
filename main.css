@@ -412,3 +412,20 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
  #sound-toggle{min-width:34px;min-height:39px;font-size:18px!important}
  .audio-settings{padding:11px 12px;margin:12px 0}
 }
+
+/* QAMAL V6: guard shift / day-night schedule HUD. */
+.hud-time{display:flex;flex-direction:column;justify-content:center;min-width:112px;
+  border:1px solid #6d8494;background:rgba(12,28,41,.88);border-radius:6px;
+  padding:6px 9px;text-align:center;box-shadow:0 0 15px #0008}
+.hud-time strong{color:#f4d3a0;font:900 18px/1.1 Consolas,monospace;letter-spacing:.05em}
+.hud-time small{color:#c9dfdf;font:700 8px/1.25 Consolas,monospace;margin-top:3px;
+  text-transform:uppercase;max-width:140px}
+#staff-count{font:700 10px/1.2 Consolas,monospace;color:#a9d7db;white-space:nowrap}
+.world-screen[data-time-of-day="night"] .hud-time{background:rgba(15,24,53,.97);
+  border-color:#8e91b2;box-shadow:0 0 18px #1a2c5b55}
+.world-screen[data-time-of-day="night"] .hud-time strong{color:#b4caef}
+.world-screen[data-time-of-day="dusk"] .hud-time{border-color:#c2a06e}
+@media(max-width:940px){.hud-time{min-width:80px;padding:4px 6px}
+  .hud-time strong{font-size:15px}.hud-time small{font-size:7px;max-width:90px}}
+@media(max-width:680px){.hud-time{min-width:58px;padding:3px}
+  .hud-time strong{font-size:13px}.hud-time small{display:none}}

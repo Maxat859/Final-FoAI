@@ -95,6 +95,17 @@ export function createPanels(dialog,handlers){
     if(name==='dossiers')handlers.dossiers.render();
     if(name==='lab')handlers.lab.render();
     if(name==='tactical'){encounter=createEncounter({guardPosition:0,playerPosition:5,maxTurns:10});encounterSummary='В этой мини-игре настоящий Minimax выбирает решение охранника.';drawTactical();}
+    if(name==='room-info'){
+      const label=esc(data?.name||'Помещение тюрьмы');
+      const description=esc(data?.description||'Новая зона комплекса QAMAL.');
+      inner.innerHTML=shell(label,
+        '<div class="room-info-scene"><div class="room-info-number">QAMAL / SECTOR '+esc(data?.id||'')+'</div>'+
+        '<h3>'+label+'</h3><p>'+description+'</p>'+
+        '<p>Осмотри мебель и оборудование, исследуй соседние помещения и ищи учебные терминалы на дверях. В других секторах доступны AI-инструменты.</p>'+
+        '<div class="room-info-actions"><button data-room-panel="code">ЗАДАЧИ PYTHON / GO</button>'+
+        '<button data-room-panel="planner">ПОИСК ПУТИ</button><button data-close>ВЕРНУТЬСЯ НА КАРТУ</button></div></div>',
+        'PRISON / EXPLORATION');
+    }
     if(name==='success')inner.innerHTML=shell('МИССИЯ ВЫПОЛНЕНА',`<div class="result-hero">✦ QAMAL-01 ПРOЙДЕН ✦</div><p>Ты прошёл учебный этап, логический замок, CCTV и Bayesian Inference. Это учебный MVP; новые главы появятся позже.</p><button data-close>ВЕРНУТЬСЯ В ИГРУ</button>`,'MISSION / COMPLETE');
     if(name!=='door'&&name!=='npc'&&name!=='classroom'&&name!=='library'&&name!=='mentor')dialog.querySelector('[data-close]')?.focus();
   }
@@ -167,6 +178,18 @@ export function createPanels(dialog,handlers){
   }
   function getNpcScript(npc){
     const person=npc?.id??'unknown';
+    if(npc?.role==='police')return [
+      ['Полицейский','На прогулочном дворе дежурят постовые и патрульные сотрудники. Рядом работают кинологи со служебными собаками.'],
+      ['Ерасыл','Смена охраны бывает разной?'],
+      ['Полицейский','Да. Днём идут занятия и прогулка, ночью — режим тишины. Посмотри на игровые часы вверху экрана.']
+    ];
+    if(npc?.role==='guard'&&!['guard1','guard2'].includes(person))return [
+      ['Охранник',npc.mode==='post'?
+        'Я закреплён за этим постом и остаюсь здесь. Другие сотрудники обходят коридоры.':
+        'Я проверяю соседние сектора. У патрульных собственные маршруты, а у постовых — постоянное место.'],
+      ['Ерасыл','Какие здесь помещения?'],
+      ['Охранник','Ищи таблички на карте. Тут есть учебные классы, медицинский блок, столовая, архив и мастерские.']
+    ];
     const scripts={
       arman:[
         ['Арман','Ерасыл! Я надеялся, что ты меня услышишь. Твой файл в системе выглядит подозрительно.'],
@@ -202,6 +225,16 @@ export function createPanels(dialog,handlers){
         ['Ерасыл','И как проверить вероятность?'],
         ['Мадина','Открой инструмент Bayes в меню ☰. Измени начальную вероятность и чувствительность датчика — увидишь результат.']
       ],
+      svetlana:[
+        ['Светлана','В восточном крыле открыли новые камеры, учебные комнаты и столовую.'],
+        ['Ерасыл','Как добраться до дальних помещений?'],
+        ['Светлана','Пройди через большие коридоры. За некоторыми дверями есть задания Python и Go. Лестницы ведут на другой этаж.']
+      ],
+      bakyt:[
+        ['Бакыт','Южное крыло больше старых блоков. Тут мастерские, библиотека и новые служебные помещения.'],
+        ['Ерасыл','Мне нужно где-то повторить материал.'],
+        ['Бакыт','Зайди в любую библиотеку: там есть уроки и история твоих ошибок.']
+      ],
       timur:[
         ['Тимур','Я видел твоё досье в архиве. Там есть запись, которая вызывает сомнения.'],
         ['Ерасыл','Можно ли её изменить?'],
@@ -219,7 +252,7 @@ export function createPanels(dialog,handlers){
     if(npcIndex>=npcScript.length){close();return;}
     const [speaker,phrase]=npcScript[npcIndex];
     handlers.speak?.(phrase);
-    const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard'})[speaker]||'default';
+    const portraitId=({Ерасыл:'erasyl',Арман:'arman',Руслан:'ruslan',Данияр:'daniyar',Мадина:'madina',Тимур:'timur',Охранник:'guard','Старший охранник':'guard',Полицейский:'guard'})[speaker]||'default';
     const portrait=handlers.portraitFor?.(portraitId)||'./assets/characters/prisoners/prisoner.png';
     inner.innerHTML='<div class="npc-dialog">'+
       '<div class="npc-portrait portrait-'+portraitId+'"><img src="'+esc(portrait)+'" alt="Портрет '+esc(speaker)+'"></div>'+
@@ -264,6 +297,10 @@ export function createPanels(dialog,handlers){
     if(e.target===dialog||e.target.closest('[data-close]')){close();return;}
     const id=e.target.id;
     if(e.target.dataset.camera){const cam=e.target.dataset.camera;handlers.drawCamera(inner.querySelector('#camera-preview'),cam);inner.querySelector('#camera-status').textContent=`${cam} / ВИРТУАЛЬНАЯ КАМЕРА`;return;}
+    if(e.target.closest('[data-room-panel]')){
+      const target=e.target.closest('[data-room-panel]').dataset.roomPanel;
+      if(['code','planner'].includes(target)){await open(target);return;}
+    }
     if(id==='npc-next'){advanceNpc();return;}
     if(id==='mentor-open'){close();await open('mentor');return;}
     if(e.target.dataset.doorLanguage){

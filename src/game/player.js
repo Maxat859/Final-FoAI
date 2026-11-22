@@ -1,4 +1,5 @@
 import {isPassable,inBounds} from '../config.js';
+import {nearestExpansionInteraction} from './complexExpansion.js';
 
 export const START_POSITION=Object.freeze({row:10,col:4,facing:'right',steps:0});
 export const VISION_RADIUS=6;
@@ -9,7 +10,7 @@ export const DIRECTIONS=Object.freeze({
 
 // Opaque tiles block vision, but the wall itself is still visible.
 // Locked bars are not treated as solid walls for line of sight.
-const OPAQUE=new Set(['#']);
+const OPAQUE=new Set(['#','K','X']);
 function lineOfSight(world,startRow,startCol,endRow,endCol){
   let x=startCol,y=startRow;
   const dx=Math.abs(endCol-startCol),dy=Math.abs(endRow-startRow);
@@ -66,6 +67,7 @@ export function nearestInteraction(player,world,entities=[],floor=1){
     {row:3,col:25,kind:'cctv',name:'Пост CCTV'},
     {row:16,col:18,kind:'dossier',name:'Архив досье'}
   ];
-  targets.push(...entities.map(e=>({...e,kind:'npc'})));
-  return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||null;
+  targets.push(...entities.map(e=>({...e,kind:e.role==='dog'?'dog':'npc'})));
+  return targets.find(t=>Math.abs(t.row-player.row)+Math.abs(t.col-player.col)<=1)||
+    nearestExpansionInteraction(player,floor)||null;
 }

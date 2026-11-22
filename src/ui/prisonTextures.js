@@ -139,6 +139,25 @@ function prop(ctx,t,x,y){
     metal(ctx,x+3,y+3,26,26,'#bac4bb','#283744');
     R(ctx,x+7,y+7,18,18,'#345567');R(ctx,x+9,y+9,14,14,'#547f91');
     R(ctx,x+15,y+7,3,18,'#c9c3ad');R(ctx,x+7,y+15,18,3,'#c9c3ad');break;
+  case 'j': // steel exercise bench with wooden seat
+    R(ctx,x+3,y+8,26,5,'#677f82');R(ctx,x+5,y+11,22,8,'#344955');
+    R(ctx,x+8,y+7,16,6,'#b39974');
+    R(ctx,x+7,y+18,4,9,'#a9bac0');R(ctx,x+22,y+18,4,9,'#a9bac0');
+    R(ctx,x+5,y+25,22,3,'#1b303b');break;
+  case 'o': // basketball post / exercise station
+    R(ctx,x+13,y+5,6,24,'#9aa8a9');
+    R(ctx,x+10,y+6,12,4,'#d8cfb5');
+    R(ctx,x+10,y+7,12,2,'#7a9399');
+    R(ctx,x+6,y+10,20,3,'#cf815b');
+    R(ctx,x+11,y+13,10,2,'#f7d9a2');
+    R(ctx,x+10,y+28,12,3,'#415665');break;
+  case 'g': // planter, greenery softens the concrete yard
+    R(ctx,x+7,y+19,18,10,'#7f755b');
+    R(ctx,x+10,y+14,12,12,'#335d4d');
+    R(ctx,x+5,y+10,10,12,'#4c8364');
+    R(ctx,x+18,y+8,9,12,'#6c9770');
+    D(ctx,x+14,y+11,4,'#9cb981');
+    R(ctx,x+8,y+28,16,3,'#4a4740');break;
   case 'L': // fluorescent ceiling light
     metal(ctx,x+5,y+5,22,22,'#9ea4a1','#273d4a');
     R(ctx,x+11,y+7,10,18,'#f0dca5');R(ctx,x+14,y+9,4,15,'#fff5cb');break;
@@ -156,8 +175,49 @@ function prop(ctx,t,x,y){
 }
 
 export function paintPrisonTile(ctx,t,x,y,row,col,floor=1,opened=false){
-  // Concrete underlays vary by level, but every tile is 32x32 pixel aligned.
+  // Different surfaces for tiled buildings, fenced exercise grounds and court.
+  if(t==='Y'||t==='Z'){
+    R(ctx,x,y,32,32,t==='Y'?'#64717a':'#466e72');
+    if(t==='Y'){
+      R(ctx,x,y+31,32,1,'#4c5b62');
+      R(ctx,x+31,y,1,32,'#57676a');
+    }else{
+      // Continuous sports-court marking, not stripes repeated on every tile.
+      if(row===44||row===54)R(ctx,x,y+(row===44?2:29),32,2,'#d7cfb5');
+      if(col===71||col===92)R(ctx,x+(col===71?2:29),y,2,32,'#d7cfb5');
+      if(col===82)R(ctx,x+15,y,2,32,'#d7cfb5');
+      if((row===48||row===50)&&(col===76||col===87))
+        R(ctx,x+8,y+15,16,2,'#d7cfb5');
+    }
+    for(let i=0;i<5;i++){
+      const xx=(hash(row,col,i*3)%28)+2,yy=(hash(row,col,i*3+1)%28)+2;
+      D(ctx,x+xx,y+yy,1,t==='Y'?'#8a8e87':'#6e9390');
+    }
+    return;
+  }
   concrete(ctx,x,y,row,col,floor===2);
+  if(t==='F'){
+    // Chain-link perimeter: transparent to sight, solid to movement.
+    R(ctx,x,y,32,32,'#324c58');
+    for(let i=-8;i<40;i+=8){
+      R(ctx,x+Math.max(0,i),y+4,2,24,'#91a4a7');
+      R(ctx,x+Math.max(0,i+4),y+9,2,16,'#667f84');
+    }
+    R(ctx,x,y+3,32,3,'#c5c7b6');R(ctx,x,y+28,32,3,'#566d76');
+    R(ctx,x+7,y+8,2,17,'#bdc4b8');R(ctx,x+23,y+8,2,17,'#bdc4b8');
+    return;
+  }
+  if(t==='X'){
+    // High guard tower: elevated platform and observation spot.
+    R(ctx,x+1,y+1,30,30,'#2b3c49');
+    R(ctx,x+4,y+5,24,23,'#667987');
+    R(ctx,x+6,y+4,20,5,'#b6b7a9');
+    R(ctx,x+8,y+10,16,14,'#162e3b');
+    R(ctx,x+10,y+11,12,7,'#496f7d');
+    R(ctx,x+14,y+14,4,4,'#a6ddcc');
+    R(ctx,x+5,y+26,22,4,'#2c404e');
+    rivets(ctx,x+4,y+5,24,24);return;
+  }
   if(t==='#'||t==='K'||t==='G'||t==='B'){
     drawStructure(ctx,t,x,y,row,col);return;
   }

@@ -16,10 +16,10 @@ export function drawDirectionalCharacter(ctx,x,y,{
   facing='down',walkFrame=0,moving=false,kind='player'
 }={}){
   const direction=normalizeFacing(facing);
-  const guard=kind==='guard',prisoner=kind==='prisoner';
-  const cloth=guard?'#386891':prisoner?'#5e7c70':'#b88453';
-  const clothLight=guard?'#6d9fbc':prisoner?'#83a495':'#d1a674';
-  const clothDark=guard?'#284667':prisoner?'#3d6357':'#795636';
+  const guard=kind==='guard'||kind==='police',prisoner=kind==='prisoner',police=kind==='police';
+  const cloth=police?'#213f5f':guard?'#386891':prisoner?'#5e7c70':'#b88453';
+  const clothLight=police?'#5485a5':guard?'#6d9fbc':prisoner?'#83a495':'#d1a674';
+  const clothDark=police?'#152b47':guard?'#284667':prisoner?'#3d6357':'#795636';
   const skin=guard?'#d6ae87':'#cb9672';
   const hair=guard?'#1c2d40':'#29252b';
   const boot='#182935',eye='#23232a';
@@ -61,6 +61,11 @@ export function drawDirectionalCharacter(ctx,x,y,{
     R(7,10,4,5,skin);R(11,11,4,2,eye);R(8,14,4,2,'#a6745e');
     R(12,16,7,1,'#855a51');
     if(guard){R(10,4,15,4,clothDark);R(9,7,18,3,cloth);}
+  }
+  if(police){
+    // Police star emblem, visible on all four directional uniforms.
+    R(17,19,5,5,'#d6bd7e');
+    R(19,20,2,2,'#223b50');
   }
   // Subtle highlights to keep the 32px artwork readable over dark concrete.
   R(8,18,1,6,clothLight);R(25,18,1,6,clothDark);

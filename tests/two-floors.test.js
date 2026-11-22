@@ -7,7 +7,7 @@ import {createLiveWorld,advanceLiveWorld,guardEntities,restoreLiveWorld} from '.
 import {paintPrisonTile} from '../src/ui/prisonTextures.js';
 import {findPath} from '../src/algorithms/search.js';
 
-test('Two complete 48×32 maps exist and have different prison layouts',()=>{
+test('Two complete 104×72 maps exist and have different prison layouts',()=>{
   assert.deepEqual(FLOORS,[1,2]);
   const lower=createLevel(1),upper=createLevel(2);
   for(const map of [lower,upper]){
@@ -38,14 +38,15 @@ test('Prisoner wakes next to a bed in a locked cell with actual bars',()=>{
 
 test('Paired staircases are on passable tiles on both floors',()=>{
   const maps={1:createLevel(1),2:createLevel(2)};
-  assert.equal(STAIR_LINKS.length,2);
+  assert.equal(STAIR_LINKS.length,5);
   for(const s of STAIR_LINKS){
     assert.equal(maps[1][s.row][s.col],'U');
     assert.equal(maps[2][s.row][s.col],'N');
     assert.ok(isPassable(maps[1],s.row,s.col));
     assert.ok(isPassable(maps[2],s.row,s.col));
   }
-  assert.equal(maps[1][29][45],'E');
+  assert.equal(maps[1][68][100],'E');
+  assert.equal(maps[1][29][45],'.');
 });
 
 test('Both staircases are navigable on upper floor with opened doors',()=>{
@@ -73,15 +74,15 @@ test('Both floors have convincing props and challenge doors',()=>{
 test('Guards patrol and detect only the current floor',()=>{
   const first=createLevel(1),second=createLevel(2);
   const state=createLiveWorld();
-  assert.equal(state.guards.length,4);
-  assert.equal(guardEntities(state,1).length,2);
-  assert.equal(guardEntities(state,2).length,2);
+  assert.equal(state.guards.length,33);
+  assert.equal(guardEntities(state,1).length,19);
+  assert.equal(guardEntities(state,2).length,14);
   const upper=advanceLiveWorld(state,{row:12,col:30},second,2);
   assert.ok(upper.state.alarm.value>0);
   assert.ok(upper.events.some(e=>e.type==='guard_spotted'));
   const lowerGuards=state.guards.filter(g=>g.floor===1);
   assert.deepEqual(upper.state.guards.filter(g=>g.floor===1),lowerGuards);
   const restored=restoreLiveWorld(JSON.parse(JSON.stringify(upper.state)));
-  assert.equal(guardEntities(restored,2).length,2);
+  assert.equal(guardEntities(restored,2).length,14);
   assert.deepEqual(first[10][10],'U');
 });
