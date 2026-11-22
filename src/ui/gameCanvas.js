@@ -74,6 +74,14 @@ export function createRenderer(canvas,mini,assets={images:new Map()}){
         kind:entity.role==='police'?'police':guardSprite&&!playerSprite?'guard':'player'
       });
     }else sprite(entity.spriteId||ASSET_IDS.player,x,y);
+    if(entity.sleeping){
+      // Inactive residents rest in their cell beds while night patrols continue.
+      ctx.fillStyle='#b6d9e8';
+      ctx.font='bold 11px monospace';
+      ctx.fillText('z',x+18,y+6);
+      ctx.fillStyle='#8aafc7';ctx.font='bold 8px monospace';
+      ctx.fillText('z',x+25,y+1);
+    }
     if(highlight){
       ctx.lineWidth=2;ctx.strokeStyle='#f3c66a';
       ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
