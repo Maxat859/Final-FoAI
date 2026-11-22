@@ -130,13 +130,16 @@ export function updateResidents(current,clock,worlds,{steps=3}={}){
     if(p.row===target.row&&p.col===target.col)
       return {...p,sleeping:false,moving:false,animation:'idle'};
     const world=worlds[p.floor];
-    const route=planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row});
-    // Roll-call is a visible return-to-cells sequence, with NPCs moving
-    // in-world rather than instant teleportation.
-    const point=route[Math.min(Math.max(1,steps),route.length-1)];
-    if(!point)return {...p,sleeping:false,moving:false};
+    const key=target.row+','+target.col;
+    const path=p.routeTarget===key&&Array.isArray(p.pathSteps)&&p.pathSteps.length
+      ?p.pathSteps:planPatrol(world,{x:p.col,y:p.row},{x:target.col,y:target.row}).slice(1);
+    // Visible movement during roll-call; one cached route per destination.
+    const count=Math.min(Math.max(1,steps),path.length);
+    const point=path[count-1];
+    if(!point)return {...p,sleeping:false,moving:false,routeTarget:key,pathSteps:[]};
     const next={row:point.y,col:point.x};
     return {...p,...next,sleeping:false,moving:true,animation:'walk',
+      routeTarget:key,pathSteps:path.slice(count),
       walkFrame:(p.walkFrame||0)+1,facing:facingFromStep(p,next,p.facing)};
   });
 }
