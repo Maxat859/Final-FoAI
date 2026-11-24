@@ -81,3 +81,39 @@ test('Returning prisoners do not teleport, collide or lose their beds on save',(
   assert.deepEqual(restored.map(p=>[p.row,p.col,p.home.row,p.home.col]),
     residents.map(p=>[p.row,p.col,p.home.row,p.home.col]));
 });
+
+
+test('Opening scene has visible neighbouring prisoners without removing the 31-NPC roster',()=>{
+  const people=createResidentRoster(worlds,DEFAULT_ENTITIES);
+  const nearby=people.filter(p=>p.floor===1&&p.role==='resident'&&
+    Math.abs(p.row-10)+Math.abs(p.col-4)<=3);
+  assert.ok(nearby.length>=1,'At least one prisoner should be near Erasyl at the opening');
+  const mates=people.filter(p=>['resident-1-01','resident-1-02','resident-1-03'].includes(p.id));
+  assert.deepEqual(mates.map(p=>[p.row,p.col]),[[11,5],[7,5],[7,7]]);
+  for(const p of mates){
+    assert.ok(isPassable(worlds[p.floor],p.row,p.col),p.id+' spawn must be walkable');
+    for(const station of Object.values(p.stations))
+      assert.ok(isPassable(worlds[p.floor],station.row,station.col),p.id+' station must be walkable');
+  }
+  assert.equal(people.length,31);
+});
+
+test('Returning to a previous save moves only the newly nearby prisoners to the opening wing',()=>{
+  const fresh=createResidentRoster(worlds,DEFAULT_ENTITIES);
+  const old=fresh.map(p=>({...p,day:{...p.day},row:p.row,col:p.col}));
+  // Simulate a save from before neighbouring prisoners existed in the first wing.
+  for(const resident of old.filter(p=>['resident-1-01','resident-1-02','resident-1-03'].includes(p.id))){
+    resident.day={row:40,col:20};
+    resident.row=40;resident.col=20;
+  }
+  const restored=restoreResidents(fresh,old,worlds);
+  for(const id of ['resident-1-01','resident-1-02','resident-1-03']){
+    const expected=fresh.find(p=>p.id===id);
+    const actual=restored.find(p=>p.id===id);
+    assert.deepEqual([actual.row,actual.col],[expected.row,expected.col]);
+  }
+  for(const p of fresh.filter(p=>!['resident-1-01','resident-1-02','resident-1-03'].includes(p.id))){
+    const actual=restored.find(x=>x.id===p.id);
+    assert.deepEqual([actual.row,actual.col],[p.row,p.col],p.id+' should not move');
+  }
+});
