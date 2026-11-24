@@ -460,3 +460,205 @@ html,body,#app{width:100%;height:100%;overflow:hidden}
 .hud-time .hud-weekday{display:block;color:#efd19c;font:800 9px/1.25 Consolas,monospace;white-space:nowrap;margin-bottom:3px;letter-spacing:.02em}
 @media(max-width:940px){.hud-time .hud-weekday{font-size:7px}}
 @media(max-width:680px){.hud-time .hud-weekday{font-size:7px;white-space:normal;max-width:90px;margin-bottom:2px}}
+
+
+/* QAMAL V10 — F: minimalist start menu only; game HUD and controls untouched. */
+#main-menu.menu-screen{
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:100dvh;
+  min-height:100svh;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:clamp(20px,3vw,44px);
+  background:
+    radial-gradient(ellipse at 76% 32%,rgba(156,155,152,.15) 0%,transparent 37%),
+    linear-gradient(110deg,rgba(7,10,15,.98) 0%,rgba(10,13,18,.94) 43%,rgba(17,20,25,.53) 80%,rgba(9,12,17,.71) 100%),
+    repeating-linear-gradient(1deg,#1e2329 0px,#24272b 2px,#151a21 5px,#151a21 8px);
+  color:#f0f1f3;
+}
+#main-menu.menu-screen::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  top:-30%;right:-20%;bottom:-35%;left:51%;
+  background:repeating-linear-gradient(90deg,
+    transparent 0,transparent 76px,
+    rgba(0,0,0,.88) 79px,rgba(0,0,0,.88) 103px,
+    transparent 107px,transparent 169px);
+  transform:skewX(-23deg) rotate(-8deg);
+  transform-origin:top right;
+  filter:blur(3px);
+  opacity:.83;
+}
+#main-menu.menu-screen::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  inset:0;
+  background:
+    radial-gradient(ellipse 40% 80% at 82% 15%,rgba(229,220,201,.14),transparent 76%),
+    linear-gradient(0deg,rgba(4,7,12,.62),transparent 38%),
+    repeating-linear-gradient(0deg,transparent 0 4px,rgba(255,255,255,.011) 5px,transparent 7px);
+}
+#main-menu .menu-decoration,
+#main-menu .menu-bottom{
+  position:relative;
+  left:auto;right:auto;top:auto;bottom:auto;
+  width:100%;
+  z-index:1;
+  flex-shrink:0;
+  color:#9aa1aa;
+  font:700 10px/1.6 Consolas,monospace;
+  letter-spacing:.17em;
+}
+#main-menu .menu-decoration{
+  border-bottom:1px solid rgba(177,187,196,.16);
+  padding-bottom:16px;
+}
+#main-menu .menu-bottom{
+  margin-top:16px;
+  border-top:1px solid rgba(177,187,196,.18);
+  padding-top:15px;
+}
+#main-menu .menu-card{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:minmax(0,750px) minmax(0,1fr);
+  align-content:center;
+  width:min(1260px,100%);
+  min-height:550px;
+  flex:1 0 auto;
+  margin:0 auto;
+  padding:clamp(24px,6vw,76px) 0 clamp(22px,3vw,36px);
+  text-align:left;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+#main-menu .menu-eyebrow{
+  grid-column:1;
+  color:#dd5157;
+  font:800 clamp(10px,1.2vw,13px)/1.4 Consolas,monospace;
+  letter-spacing:.28em;
+  margin:0 0 clamp(19px,3vw,36px);
+}
+#main-menu .logo{
+  grid-column:1;
+  margin:0;
+  color:#f6f4f2;
+  font:900 clamp(76px,12vw,146px)/.89 Impact,"Arial Black",sans-serif;
+  letter-spacing:.016em;
+  text-shadow:0 8px 28px rgba(0,0,0,.44);
+}
+#main-menu .logo-dot{color:#cf363c;text-shadow:none}
+#main-menu .menu-card h1{
+  grid-column:1;
+  margin:15px 0 0;
+  color:#b6bdc7;
+  font:500 clamp(28px,3.8vw,47px)/1.14 "Arial",sans-serif;
+  letter-spacing:.25em;
+}
+#main-menu .menu-divider{
+  grid-column:1;
+  width:90px;height:4px;
+  margin:29px 0 0;
+  background:#e43e44;
+  box-shadow:0 0 18px rgba(224,47,59,.27);
+}
+#main-menu .tagline{
+  grid-column:1;
+  max-width:500px;
+  color:#b7bdc7;
+  line-height:1.65;
+  font-size:clamp(12px,1.1vw,15px);
+  margin:22px 0 clamp(36px,5vw,70px);
+}
+#main-menu .menu-actions{
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));
+  gap:14px;
+  width:100%;
+}
+#main-menu .menu-actions button{
+  min-height:91px;
+  min-width:0;
+  padding:18px 16px;
+  border-radius:13px;
+  background:rgba(19,23,29,.84);
+  color:#e9ebef;
+  border:1px solid rgba(171,182,195,.22);
+  box-shadow:0 16px 38px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.06);
+  font:800 clamp(11px,1.15vw,15px)/1.4 Consolas,monospace;
+  letter-spacing:.025em;
+  text-align:center;
+  white-space:normal;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+#main-menu .menu-actions .primary-btn{
+  background:linear-gradient(145deg,#af2830,#701b24);
+  border:1px solid #df454c;
+  color:#fff;
+  box-shadow:0 13px 31px rgba(104,13,26,.38),0 0 23px rgba(174,25,40,.19),inset 0 1px 0 rgba(255,255,255,.18);
+}
+#main-menu .menu-actions .secondary-btn:hover{
+  background:#2b313a;
+  border-color:#7f8995;
+}
+#main-menu .menu-actions .primary-btn:hover{
+  background:linear-gradient(145deg,#d43843,#92242b);
+}
+#main-menu .menu-actions button:hover{
+  transform:translateY(-3px);
+}
+#main-menu .menu-actions button:active{
+  transform:translateY(0);
+}
+#main-menu .menu-actions button:focus-visible{
+  outline:3px solid #fff;
+  outline-offset:4px;
+}
+#main-menu .menu-tip{
+  grid-column:1 / -1;
+  margin:24px 0 0;
+  text-align:center;
+  font-size:clamp(10px,.95vw,12px);
+  line-height:1.7;
+  color:#a3aebc;
+  letter-spacing:.035em;
+}
+@media(max-width:900px){
+  #main-menu .menu-card{
+    grid-template-columns:minmax(0,1fr);
+    min-height:520px;
+    padding:clamp(45px,8vh,90px) 0 22px;
+  }
+  #main-menu .logo{font-size:clamp(75px,15vw,125px)}
+  #main-menu .menu-card h1{font-size:clamp(26px,5vw,44px)}
+  #main-menu .menu-actions{grid-template-columns:1fr}
+  #main-menu .menu-actions button{min-height:62px;font-size:13px}
+  #main-menu .tagline{margin-bottom:34px}
+}
+@media(max-width:550px){
+  #main-menu.menu-screen{padding:18px}
+  #main-menu .menu-decoration,#main-menu .menu-bottom{display:none}
+  #main-menu .menu-card{min-height:100%;padding:clamp(28px,6vh,70px) 0 26px}
+  #main-menu .menu-eyebrow{font-size:9px;letter-spacing:.13em;margin-bottom:25px}
+  #main-menu .logo{font-size:clamp(63px,17vw,100px);letter-spacing:0}
+  #main-menu .menu-card h1{font-size:clamp(20px,5.5vw,32px);letter-spacing:.18em}
+  #main-menu .menu-divider{margin-top:25px}
+  #main-menu .tagline{font-size:12px;margin-bottom:38px}
+  #main-menu .menu-actions{gap:11px}
+  #main-menu .menu-actions button{min-height:60px;padding:13px 11px}
+  #main-menu .menu-tip{text-align:left;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  #main-menu .menu-actions button{transition:none}
+}
+
