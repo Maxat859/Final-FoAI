@@ -59,6 +59,24 @@ export function createNightWorld(world,floor,clock){
   }
   return map;
 }
+
+// Three existing residents now live in the original north-west cell block.
+// They are deliberately close to the opening scene; the remaining roster and
+// all AI/mission mechanics stay unchanged.
+const STARTING_BLOCK_RESIDENTS=Object.freeze({
+  'resident-1-01':{
+    day:{row:11,col:5},home:{row:11,col:5},
+    breakfast:{row:11,col:5},study:{row:11,col:5},activity:{row:11,col:5}
+  },
+  'resident-1-02':{
+    day:{row:7,col:5},home:{row:3,col:4},
+    breakfast:{row:6,col:4},study:{row:6,col:5},activity:{row:7,col:4}
+  },
+  'resident-1-03':{
+    day:{row:7,col:7},home:{row:3,col:7},
+    breakfast:{row:6,col:7},study:{row:5,col:7},activity:{row:7,col:7}
+  }
+});
 const names=['Марат','Нурали','Санжар','Али','Мейрам','Олжас',
   'Асем','Лаура','Рауан','Дамир','Аяжан','Ерлан','Зарина','Бекзат'];
 function seat(room,index){
@@ -153,6 +171,17 @@ export function createResidentRoster(worlds,original=[]){
     const activity=activityPlace(worlds[p.floor],p.floor,['workshop','recreation','yard'],index,allocations.activity,p.day);
     p.stations={wake:p.day,breakfast,study,lunch:breakfast,activity,
       rollcall:p.home,dinner:breakfast,return:p.home,sleep:p.home};
+    const start=STARTING_BLOCK_RESIDENTS[p.id];
+    if(start){
+      // Visible neighbours in the original playable cell block, not distant
+      // expansion rooms. Keep these spots stable for daily routine and saves.
+      p.day={...start.day};p.home={...start.home};
+      p.row=p.day.row;p.col=p.day.col;
+      p.stations={wake:p.day,breakfast:{...start.breakfast},
+        study:{...start.study},lunch:{...start.breakfast},
+        activity:{...start.activity},rollcall:p.home,
+        dinner:{...start.breakfast},return:p.home,sleep:p.home};
+    }
   }
   return residents;
 }
@@ -225,7 +254,13 @@ export function restoreResidents(fresh,saved,worlds){
     }
     homes.add(toKey(p.floor,home));
     let row=p.row,col=p.col;
-    if(old?.floor===p.floor&&valid(p.floor,old)&&!positions.has(toKey(p.floor,old))){
+    // Existing saves placed these three residents in distant expansions.
+    // Migrate just their positions once (day coordinate changes); no player
+    // progress or other NPC positions are reset.
+    const newStart=STARTING_BLOCK_RESIDENTS[p.id];
+    const wasFarAway=newStart&&old?.day&&
+      (old.day.row!==p.day.row||old.day.col!==p.day.col);
+    if(!wasFarAway&&old?.floor===p.floor&&valid(p.floor,old)&&!positions.has(toKey(p.floor,old))){
       row=old.row;col=old.col;
     }
     positions.add(toKey(p.floor,{row,col}));
